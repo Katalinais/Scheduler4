@@ -35,7 +35,7 @@
       const src = info.fn.toString();
       els.desc.textContent = info.desc;
       els.codeBlock.innerHTML = highlightJS(src);
-      els.meta.textContent = `${info.fn.name}()  ·  ${src.split('\n').length} líneas`;
+      els.meta.textContent = `${info.fn.name}() — ${src.split('\n').length} líneas`;
     }
 
     els.tabsBox.innerHTML = algoOrder.map(key =>

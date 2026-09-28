@@ -13,10 +13,10 @@ const Render = Scheduler.Render;
 const DecisionLog = Scheduler.DecisionLog;
 
 const ALGO_META = {
-  FCFS: { label:'FCFS', full:'First-Come, First-Served', accent:'#4fd1c5' },
-  SJF:  { label:'SJF',  full:'Shortest Job First (no expropiativo)', accent:'#ffb454' },
-  SRTF: { label:'SRTF', full:'Shortest Remaining Time First (expropiativo)', accent:'#ff6b81' },
-  RR:   { label:'RR',   full:'Round Robin', accent:'#7aa2ff' },
+  FCFS: { label:'FCFS', full:'First-Come, First-Served', accent:'#1f3a5f' },
+  SJF:  { label:'SJF',  full:'Shortest Job First (no expropiativo)', accent:'#7a2331' },
+  SRTF: { label:'SRTF', full:'Shortest Remaining Time First (expropiativo)', accent:'#2f5233' },
+  RR:   { label:'RR',   full:'Round Robin', accent:'#3d3a6b' },
 };
 const ALGO_ORDER = ['FCFS','SJF','SRTF','RR'];
 const RUN = { FCFS: Algorithms.fcfs, SJF: Algorithms.sjf, SRTF: Algorithms.srtf, RR: Algorithms.rr };
@@ -55,7 +55,6 @@ const btnPlay = $('btnPlay');
 const playIcon = $('playIcon');
 const speedGroup = $('speedGroup');
 const tooltip = $('tooltip');
-const statusLed = $('statusLed');
 const statusText = $('statusText');
 const clockText = $('clockText');
 const verdictsEl = $('verdicts');
@@ -169,7 +168,7 @@ function buildChannelsDOM(){
 
 function renderLegend(procs){
   legendStrip.innerHTML = procs.map(p=>`
-    <div class="legend-chip"><span class="sw" style="background:${Render.colorOf(p.id)}"></span>P${p.id} · llegada ${p.arrival} · ráfaga ${p.burst}</div>
+    <div class="legend-chip"><span class="sw" style="background:${Render.colorOf(p.id)}"></span>P${p.id}: llegada ${p.arrival}, ráfaga ${p.burst}</div>
   `).join('');
 }
 
@@ -183,7 +182,7 @@ function renderMetrics(key, metrics){
   `;
   const starveBox = $('starve-'+key);
   starveBox.innerHTML = metrics.starving.length
-    ? `<div class="starve-badge">⚠ Posible inanición: ${metrics.starving.map(id=>'P'+id).join(', ')}</div>`
+    ? `<div class="starve-badge">Posible inanición: ${metrics.starving.map(id=>'P'+id).join(', ')}</div>`
     : '';
   const detail = $('detail-'+key);
   detail.innerHTML = `
@@ -289,7 +288,7 @@ function runSimulation(){
   if(errs.length) return;
 
   stopPlaying();
-  setStatus('busy', 'PROCESANDO');
+  setStatus('busy', 'Calculando…');
 
   setTimeout(()=>{
     const procs = rows.map((r,i)=>({ id: i+1, arrival: Number(r.arrival), burst: Number(r.burst) }));
@@ -317,7 +316,7 @@ function runSimulation(){
 
     emptyState.style.display = 'none';
     resultsLive.classList.add('show');
-    resultsSub.textContent = `${procs.length} procesos · quantum ${quantum} · t_max ${maxTime}`;
+    resultsSub.textContent = `${procs.length} procesos, quantum ${quantum}, t_max ${maxTime}`;
 
     buildChannelsDOM();
     renderLegend(procs);
@@ -335,7 +334,7 @@ function runSimulation(){
     Scheduler.StepView.setSim(sim);
     updateCursor(0);
     if(currentView === 'dashboard') renderCompare();
-    setStatus('ready', 'LISTO');
+    setStatus('ready', 'Listo.');
   }, 220);
 }
 
@@ -359,11 +358,11 @@ function renderCompare(){
 }
 
 function markStale(){
-  if(sim) setStatus('stale', 'DATOS MODIFICADOS');
+  if(sim) setStatus('stale', 'Datos modificados — vuelve a simular.');
 }
 
 function setStatus(kind, text){
-  statusLed.className = 'led led-' + kind;
+  statusText.className = 'status-text status-' + kind;
   statusText.textContent = text;
 }
 
@@ -381,7 +380,7 @@ function wireHover(key){
     if(hit){
       hoverProcId = hit.id;
       tooltip.style.display = 'block';
-      tooltip.innerHTML = `<b>P${hit.id}</b> · inicio ${hit.start} · fin ${hit.end} · duración ${hit.end-hit.start}`;
+      tooltip.innerHTML = `<b>P${hit.id}</b> — inicio ${hit.start}, fin ${hit.end}, duración ${hit.end-hit.start}`;
       tooltip.style.left = (e.clientX+14)+'px'; tooltip.style.top = (e.clientY+14)+'px';
     } else {
       hoverProcId = null;
@@ -454,23 +453,24 @@ $('btnExport').addEventListener('click', ()=>{
   const ctx = c.getContext('2d');
   ctx.setTransform(dpr,0,0,dpr,0,0);
 
-  ctx.fillStyle = '#0a0d12'; ctx.fillRect(0,0,width,height);
+  ctx.fillStyle = '#fdfcfa'; ctx.fillRect(0,0,width,height);
 
-  ctx.fillStyle = '#e7ebf2';
-  ctx.font = '700 20px "Chakra Petch", sans-serif';
+  ctx.fillStyle = '#1c1c1a';
+  ctx.font = '700 20px "PT Serif", Georgia, serif';
   ctx.textAlign = 'left';
   ctx.fillText('Panel de Planificación de CPU — Reporte de Simulación', marginX, 34);
-  ctx.font = '500 11px "JetBrains Mono", monospace';
-  ctx.fillStyle = '#8d99b0';
+  ctx.font = 'italic 11px "PT Serif", Georgia, serif';
+  ctx.fillStyle = '#8a877e';
   ctx.fillText(new Date().toLocaleString(), marginX, 52);
-  ctx.fillText(`${sim.procs.length} procesos · quantum RR ${$('quantumInput').value} · t_max ${sim.maxTime}`, marginX, 68);
+  ctx.fillText(`${sim.procs.length} procesos, quantum RR ${$('quantumInput').value}, t_max ${sim.maxTime}`, marginX, 68);
 
   let y = headerH;
   ctx.font = '500 11px "JetBrains Mono", monospace';
   let lx = marginX;
   sim.procs.forEach(p=>{
     ctx.fillStyle = Render.colorOf(p.id); ctx.fillRect(lx, y, 9, 9);
-    ctx.fillStyle = '#8d99b0';
+    ctx.strokeStyle = '#1c1c1a'; ctx.lineWidth = 1; ctx.strokeRect(lx+0.5, y+0.5, 9, 9);
+    ctx.fillStyle = '#4a4a46';
     const label = `P${p.id} L${p.arrival}/R${p.burst}`;
     ctx.fillText(label, lx+13, y+9);
     lx += ctx.measureText(label).width + 36;
@@ -482,14 +482,15 @@ $('btnExport').addEventListener('click', ()=>{
     const data = sim.algos[key];
     const m = data.metrics;
     ctx.fillStyle = meta.accent;
-    ctx.fillRect(marginX-14, y, 4, 60);
-    ctx.font = '700 15px "Chakra Petch", sans-serif';
+    ctx.fillRect(marginX-14, y, 3, 60);
+    ctx.font = '700 15px "PT Serif", Georgia, serif';
+    ctx.fillStyle = '#1c1c1a';
     ctx.fillText(`${meta.label} — ${meta.full}`, marginX, y+14);
     ctx.font = '500 11px "JetBrains Mono", monospace';
-    ctx.fillStyle = '#8d99b0';
+    ctx.fillStyle = '#4a4a46';
     ctx.fillText(
       `Espera ${m.avgWaiting.toFixed(2)}   Retorno ${m.avgTurnaround.toFixed(2)}   Respuesta ${m.avgResponse.toFixed(2)}   Cambios ${m.contextSwitches}` +
-      (m.starving.length ? `   ⚠ Inanición: ${m.starving.map(i=>'P'+i).join(',')}` : ''),
+      (m.starving.length ? `   Inanición: ${m.starving.map(i=>'P'+i).join(',')}` : ''),
       marginX, y+30
     );
     ctx.save();
@@ -512,8 +513,8 @@ $('btnExport').addEventListener('click', ()=>{
   Render.drawComparisonChart(ctx, trackW+12, chartH-20, compareData);
   ctx.restore();
 
-  ctx.fillStyle = '#56607a';
-  ctx.font = '500 10px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#8a877e';
+  ctx.font = 'italic 10px "PT Serif", Georgia, serif';
   ctx.textAlign = 'center';
   ctx.fillText('Simulador académico de planificación de CPU — Sistemas Operativos', width/2, height-14);
 

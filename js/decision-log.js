@@ -10,17 +10,17 @@
   const DecisionLog = g.Scheduler.DecisionLog = g.Scheduler.DecisionLog || {};
 
   const KIND_META = {
-    dispatch: { label: 'DESPACHO',      color: '#52d6d0' },
-    preempt:  { label: 'EXPROPIACIÓN',  color: '#ff5c72' },
-    idle:     { label: 'INACTIVA',      color: '#56607a' },
-    admit:    { label: 'ADMISIÓN',      color: '#59d68a' },
-    requeue:  { label: 'REENCOLA',      color: '#ffb454' },
-    finish:   { label: 'FIN',           color: '#9d8bff' },
+    dispatch: { label: 'DESPACHO',      color: '#1f3a5f' },
+    preempt:  { label: 'EXPROPIACIÓN',  color: '#b0413e' },
+    idle:     { label: 'INACTIVA',      color: '#8a877e' },
+    admit:    { label: 'ADMISIÓN',      color: '#4f7942' },
+    requeue:  { label: 'REENCOLA',      color: '#96731c' },
+    finish:   { label: 'FIN',           color: '#6b4c9a' },
   };
 
   function render(container, log){
     container.innerHTML = log.map((entry, i) => {
-      const meta = KIND_META[entry.kind] || { label: entry.kind.toUpperCase(), color: '#8d99b0' };
+      const meta = KIND_META[entry.kind] || { label: entry.kind.toUpperCase(), color: '#8a877e' };
       return `<div class="log-entry" data-idx="${i}" data-t="${entry.t}">
         <span class="log-time">t=${String(entry.t).padStart(3,'0')}</span>
         <span class="log-kind" style="color:${meta.color}; border-color:${meta.color}">${meta.label}</span>

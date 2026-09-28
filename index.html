@@ -6,32 +6,33 @@
 <title>Panel de Planificación de CPU</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&family=PT+Sans:wght@400;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
 <div class="app-shell">
 
-  <header class="topbar">
+  <header class="masthead">
     <div class="brand">
-      <div class="brand-mark"><span></span><span></span><span></span><span></span></div>
+      <div class="seal">SO</div>
       <div class="brand-text">
         <h1>Panel de Planificación de CPU</h1>
-        <p>FCFS · SJF · SRTF · ROUND ROBIN — comparación simultánea</p>
+        <p>Cuatro algoritmos clásicos de planificación — FCFS, SJF, SRTF y Round Robin — comparados sobre los mismos procesos</p>
       </div>
     </div>
     <div class="status-cluster">
-      <div class="status-pill"><span class="led led-wait" id="statusLed"></span><span id="statusText">EN ESPERA</span></div>
-      <div class="status-pill clock"><span id="clockText">00:00:00</span></div>
+      <span class="status-text" id="statusText">En espera.</span>
+      <span class="status-sep" aria-hidden="true">—</span>
+      <span class="clock" id="clockText">00:00:00</span>
     </div>
   </header>
 
   <div class="layout">
     <!-- ======================= INPUT PANEL ======================= -->
-    <aside class="panel" style="--panel-accent:var(--amber)">
+    <aside class="panel" style="--panel-accent:#1f3a5f">
       <div class="panel-head">
-        <span class="panel-index">01</span>
+        <span class="fig-label">Fig. 1</span>
         <h2>Procesos</h2>
         <span class="sub" id="procCount">4 filas</span>
       </div>
@@ -43,15 +44,15 @@
           <tbody id="procBody"></tbody>
         </table>
 
-        <button class="btn btn-add" id="btnAddRow">+ Agregar proceso</button>
+        <button class="btn btn-add" id="btnAddRow">Agregar proceso</button>
 
         <div class="quantum-row">
-          <label>Quantum Round Robin<span class="tiny">unidades de tiempo por turno</span></label>
+          <label>Quantum de Round Robin<span class="tiny">unidades de tiempo por turno</span></label>
           <input type="number" id="quantumInput" value="4" min="1" step="1">
         </div>
 
         <div class="error-box" id="errorBox">
-          <div class="err-title">⚠ ERR :: ENTRADA INVÁLIDA</div>
+          <div class="err-title">Antes de simular, corrige esto:</div>
           <ul id="errorList"></ul>
         </div>
 
@@ -63,19 +64,19 @@
     </aside>
 
     <!-- ======================= RESULTS ======================= -->
-    <section class="panel" style="--panel-accent:var(--cyan)">
+    <section class="panel" style="--panel-accent:#1f3a5f">
       <div class="panel-head">
-        <span class="panel-index">02</span>
+        <span class="fig-label">Fig. 2</span>
         <h2>Simulación</h2>
         <span class="sub" id="resultsSub">sin datos</span>
       </div>
       <div class="panel-body" style="padding:0">
 
         <div class="results-empty" id="emptyState">
-          <div class="radar"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="dot"></div></div>
-          <h3>SIN SEÑAL</h3>
-          <p>Configura los procesos a la izquierda —llegada y ráfaga— y ajusta el quantum de Round Robin. Cuando estés listo, presiona <strong>Simular</strong> para ejecutar los cuatro algoritmos sobre los mismos datos.</p>
-          <div class="prompt-line">&gt; esperando datos<span class="blink">_</span></div>
+          <div class="fig-placeholder">
+            <span class="fig-placeholder-label">Fig. 2 — pendiente</span>
+          </div>
+          <p>Configura los procesos a la izquierda (llegada y ráfaga) y ajusta el quantum de Round Robin. Cuando estés listo, presiona <strong>Simular</strong> para generar esta figura con los cuatro algoritmos sobre los mismos datos.</p>
         </div>
 
         <div class="results-live" id="resultsLive" data-view="procesador">
@@ -89,10 +90,10 @@
             </div>
             <div class="time-readout mono">t = <span id="timeReadout">000</span></div>
             <div class="speed-group" id="speedGroup">
-              <button data-speed="0.5">0.5x</button>
-              <button data-speed="1" class="active">1x</button>
-              <button data-speed="2">2x</button>
-              <button data-speed="4">4x</button>
+              <button data-speed="0.5">0.5×</button>
+              <button data-speed="1" class="active">1×</button>
+              <button data-speed="2">2×</button>
+              <button data-speed="4">4×</button>
             </div>
             <button class="btn btn-ghost export-btn" id="btnExport">Exportar PNG</button>
           </div>
@@ -105,11 +106,11 @@
             <div class="step-toolbar">
               <button class="btn btn-ghost" id="btnStepPrev">Paso anterior</button>
               <button class="btn btn-ghost" id="btnStepNext">Paso siguiente</button>
-              <button class="btn btn-ghost btn-diff" id="btnStepDiff">Ir a la siguiente diferencia</button>
+              <button class="btn btn-ghost btn-diff" id="btnStepDiff">Siguiente diferencia</button>
               <label class="follow-label">Seguir proceso
                 <select id="followSel"><option value="">Ninguno</option></select>
               </label>
-              <span class="step-hint">Teclas izquierda y derecha también avanzan</span>
+              <span class="step-hint">Las flechas del teclado también avanzan</span>
             </div>
             <div class="proc-modes proc-only" id="procModes">
               <button data-mode="all" class="active">Los 4</button>
@@ -128,8 +129,8 @@
           </div>
 
           <div class="step-panel dash-only" id="stepPanel">
-            <div class="panel-head" style="border-bottom:1px solid var(--line)">
-              <span class="panel-index" id="stepBadge" style="background:var(--green)">t=000</span>
+            <div class="panel-head" style="border-bottom:1px solid var(--rule)">
+              <span class="fig-label" id="stepBadge">t=000</span>
               <h2>Paso a paso: los mismos procesos, cuatro decisiones</h2>
             </div>
             <div class="step-grid" id="stepGrid"></div>
@@ -140,10 +141,10 @@
           <div class="channels-wrap dash-only" id="channelsWrap"></div>
 
           <div class="compare-panel dash-only" id="comparePanel">
-            <div class="panel-head" style="border-bottom:1px solid var(--line)">
-              <span class="panel-index" style="background:var(--violet)">03</span>
+            <div class="panel-head" style="border-bottom:1px solid var(--rule)">
+              <span class="fig-label">Fig. 3</span>
               <h2>Comparación de promedios</h2>
-              <span class="sub">espera vs. retorno — los 4 algoritmos</span>
+              <span class="sub">espera contra retorno, los cuatro algoritmos</span>
             </div>
             <div class="verdicts" id="verdicts"></div>
             <div class="chart-wrap"><canvas id="compareCanvas"></canvas></div>
@@ -155,11 +156,11 @@
     </section>
   </div>
 
-  <section class="panel code-panel" style="--panel-accent:var(--violet)">
+  <section class="panel code-panel" style="--panel-accent:#1f3a5f">
     <div class="panel-head">
-      <span class="panel-index" style="background:var(--violet)">04</span>
+      <span class="fig-label">Fig. 4</span>
       <h2>Código de los algoritmos</h2>
-      <span class="sub">la función tal como corre en este archivo — sin copias ni resúmenes</span>
+      <span class="sub">la función tal como corre en este archivo, sin copias ni resúmenes</span>
     </div>
     <div class="panel-body">
       <div class="algo-tabs" id="algoTabs"></div>
@@ -172,7 +173,7 @@
     </div>
   </section>
 
-  <p class="footer-note">Simulador académico de planificación de CPU — Sistemas Operativos</p>
+  <p class="footer-note">Simulador académico de planificación de CPU, Sistemas Operativos.</p>
 </div>
 
 <div class="tooltip" id="tooltip"></div>

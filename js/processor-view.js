@@ -1,5 +1,6 @@
 /**
- * Vista Procesador: cada algoritmo se dibuja como un chip de 1 núcleo.
+ * Vista Procesador: cada algoritmo se dibuja como un diagrama de bloques de
+ * un núcleo, al estilo de una figura de libro de texto (tinta sobre papel).
  *
  *   MEMORIA (por llegar)  ->  COLA DE LISTOS  ->  PLANIFICADOR  ->  NÚCLEO  ->  TERMINADOS
  *                                  ^                                  |
@@ -7,8 +8,8 @@
  *
  * Cada proceso es una ficha que viaja por los buses. El estado de cada instante
  * se DERIVA de los resultados de los algoritmos (StepView.stateAt), así que el
- * chip nunca puede contradecir al diagrama de Gantt. Al avanzar o retroceder UN
- * paso se anima el recorrido con GSAP; al saltar más lejos se coloca todo de golpe.
+ * diagrama nunca puede contradecir al Gantt. Al avanzar o retroceder UN paso se
+ * anima el recorrido con GSAP; al saltar más lejos se coloca todo de golpe.
  */
 (function(g){
   g.Scheduler = g.Scheduler || {};
@@ -40,10 +41,10 @@
   const CYCLE_W = 24, CLOCK_X0 = G.clock.x + 70, CLOCK_POS = 5;
 
   const STATE_META = {
-    mem:   { label: 'NUEVO',      short: 'NUEVO', color: '#6b7a90' },
-    queue: { label: 'LISTO',      short: 'LISTO', color: '#ffb454' },
-    core:  { label: 'EJECUCIÓN',  short: 'EJEC.', color: '#52d6d0' },
-    done:  { label: 'TERMINADO',  short: 'TERM.', color: '#9d8bff' },
+    mem:   { label: 'NUEVO',      short: 'NUEVO', color: '#8a877e' },
+    queue: { label: 'LISTO',      short: 'LISTO', color: '#96731c' },
+    core:  { label: 'EJECUCIÓN',  short: 'EJEC.', color: '#2f5233' },
+    done:  { label: 'TERMINADO',  short: 'TERM.', color: '#3d3a6b' },
   };
 
   function zonePos(zone, idx, n){
@@ -133,35 +134,22 @@
     /* defs */
     const defs = el('defs', {}, svg);
     const pat = el('pattern', { id: uid + '-grid', width: 16, height: 16, patternUnits: 'userSpaceOnUse' }, defs);
-    el('path', { d: 'M16 0H0V16', fill: 'none', stroke: '#15282b', 'stroke-width': 0.6 }, pat);
-    const flt = el('filter', { id: uid + '-glow', x: '-40%', y: '-40%', width: '180%', height: '180%' }, defs);
-    el('feGaussianBlur', { stdDeviation: 4, result: 'b' }, flt);
-    const mg = el('feMerge', {}, flt);
-    el('feMergeNode', { in: 'b' }, mg); el('feMergeNode', { in: 'SourceGraphic' }, mg);
+    el('path', { d: 'M16 0H0V16', fill: 'none', stroke: 'rgba(28,28,26,0.05)', 'stroke-width': 0.6 }, pat);
     const clip = el('clipPath', { id: uid + '-clk' }, defs);
     el('rect', { x: CLOCK_X0, y: G.clock.y, width: G.clock.x + G.clock.w - CLOCK_X0, height: G.clock.h }, clip);
 
-    /* encapsulado y pines */
     const MONO = 'JetBrains Mono, monospace';
-    el('rect', { x: 3, y: 3, width: W - 6, height: H - 6, rx: 12, fill: '#0d1216', stroke: '#2a3641', 'stroke-width': 2 }, svg);
-    for(let i = 0; i < 34; i++){
-      const x = 24 + i * ((W - 60) / 33);
-      el('rect', { x, y: 6, width: 6, height: 6, fill: '#8a6a2a', opacity: 0.75 }, svg);
-      el('rect', { x, y: H - 12, width: 6, height: 6, fill: '#8a6a2a', opacity: 0.75 }, svg);
-    }
-    for(let i = 0; i < 14; i++){
-      const y = 26 + i * ((H - 60) / 13);
-      el('rect', { x: 6, y, width: 6, height: 6, fill: '#8a6a2a', opacity: 0.75 }, svg);
-      el('rect', { x: W - 12, y, width: 6, height: 6, fill: '#8a6a2a', opacity: 0.75 }, svg);
-    }
-    el('path', { d: 'M6 6 L22 6 L6 22 Z', fill: '#b8892f', opacity: 0.8 }, svg);
+    const SANS = '"PT Sans", "Helvetica Neue", Arial, sans-serif';
+    const INK = '#1c1c1a', INK_SOFT = '#4a4a46', INK_FAINT = '#8a877e', BLOCK_STROKE = 'rgba(28,28,26,0.4)';
 
-    /* die */
-    el('rect', { x: G.die.x, y: G.die.y, width: G.die.w, height: G.die.h, rx: 6, fill: '#0a1316', stroke: '#21474b', 'stroke-width': 1.5 }, svg);
-    el('rect', { x: G.die.x, y: G.die.y, width: G.die.w, height: G.die.h, rx: 6, fill: `url(#${uid}-grid)` }, svg);
+    /* marco de la figura, sobre papel, con textura de papel cuadriculado */
+    el('rect', { x: G.die.x, y: G.die.y, width: G.die.w, height: G.die.h, fill: '#fdfcfa', stroke: INK, 'stroke-width': 1.5 }, svg);
+    el('rect', { x: G.die.x, y: G.die.y, width: G.die.w, height: G.die.h, fill: `url(#${uid}-grid)` }, svg);
+    el('text', { x: G.die.x + 10, y: G.die.y + 15, 'font-size': 10.5, fill: INK_FAINT, 'font-family': SANS, 'letter-spacing': 0.5 },
+      svg, `CPU · 1 NÚCLEO · ${meta.label}`);
 
     /* trazas (buses) */
-    const trace = (d, extra) => el('path', Object.assign({ d, fill: 'none', stroke: '#1d4247', 'stroke-width': 3, 'stroke-linecap': 'round' }, extra || {}), svg);
+    const trace = (d, extra) => el('path', Object.assign({ d, fill: 'none', stroke: INK_FAINT, 'stroke-width': 1.6, 'stroke-linecap': 'round' }, extra || {}), svg);
     trace(`M${G.mem.x + G.mem.w} ${QY} H${G.queue.x}`);
     trace(`M${BUS_X} ${QY} V${G.mem.y + G.mem.h - 8}`, { 'stroke-dasharray': '2 5' });
     trace(`M${HEAD_X} ${G.queue.y + G.queue.h} V${G.sched.y}`);
@@ -171,46 +159,46 @@
 
     /* bloques */
     function block(r, title, extra){
-      el('rect', { x: r.x, y: r.y, width: r.w, height: r.h, rx: 4, fill: '#0f1c20', stroke: '#24494e', 'stroke-width': 1.2 }, svg);
-      el('text', { x: r.x + 8, y: r.y + 15, 'font-size': 11.5, fill: '#7fa0a7', 'font-family': MONO, 'letter-spacing': 0.5 }, svg, title);
-      if(extra) el('text', { x: r.x + r.w - 8, y: r.y + 15, 'font-size': 10.5, fill: '#4c7379', 'font-family': MONO, 'text-anchor': 'end' }, svg, extra);
+      el('rect', { x: r.x, y: r.y, width: r.w, height: r.h, fill: '#ffffff', stroke: BLOCK_STROKE, 'stroke-width': 1.2 }, svg);
+      el('text', { x: r.x + 8, y: r.y + 15, 'font-size': 11, fill: INK_SOFT, 'font-family': SANS, 'font-weight': 700, 'letter-spacing': 0.3 }, svg, title);
+      if(extra) el('text', { x: r.x + r.w - 8, y: r.y + 15, 'font-size': 10.5, fill: INK_FAINT, 'font-family': SANS, 'font-style': 'italic', 'text-anchor': 'end' }, svg, extra);
     }
     block(G.mem, 'MEMORIA');
-    el('text', { x: G.mem.x + 8, y: G.mem.y + 29, 'font-size': 10.5, fill: '#4c7379', 'font-family': MONO }, svg, 'por llegar');
+    el('text', { x: G.mem.x + 8, y: G.mem.y + 29, 'font-size': 10.5, fill: INK_FAINT, 'font-family': SANS, 'font-style': 'italic' }, svg, 'por llegar');
     block(G.queue, 'COLA DE LISTOS', 'cabeza');
-    el('line', { x1: G.queue.x + 6, y1: QY, x2: G.queue.x + G.queue.w - 6, y2: QY, stroke: '#1d3f43', 'stroke-dasharray': '3 4' }, svg);
+    el('line', { x1: G.queue.x + 6, y1: QY, x2: G.queue.x + G.queue.w - 6, y2: QY, stroke: 'rgba(28,28,26,0.25)', 'stroke-dasharray': '3 4' }, svg);
     block(G.sched, 'PLANIFICADOR', meta.label);
     block(G.pcb, 'TABLA DE PCB', 'memoria del SO');
     block(G.done, 'TERMINADOS');
 
     // núcleo
-    const coreRect = el('rect', { x: G.core.x, y: G.core.y, width: G.core.w, height: G.core.h, rx: 4, fill: '#0f1c20', stroke: meta.accent, 'stroke-width': 1.6 }, svg);
-    el('text', { x: G.core.x + 8, y: G.core.y + 15, 'font-size': 11.5, fill: meta.accent, 'font-family': MONO, 'letter-spacing': 0.5 }, svg, 'NÚCLEO 0');
-    const led = el('circle', { cx: G.core.x + G.core.w - 14, cy: G.core.y + 11, r: 5, fill: '#33424a' }, svg);
-    el('line', { x1: G.core.x, y1: G.core.y + 22, x2: G.core.x + G.core.w, y2: G.core.y + 22, stroke: '#24494e' }, svg);
-    el('rect', { x: BAY.x - 70, y: BAY.y - 26, width: 140, height: 52, rx: 3, fill: '#0a1417', stroke: '#24494e', 'stroke-dasharray': '4 3' }, svg);
-    const bayNote = el('text', { x: BAY.x, y: BAY.y + 4, 'text-anchor': 'middle', 'font-size': 11.5, fill: '#3f6a70', 'font-family': MONO }, svg, 'CPU libre');
-    el('text', { x: 446, y: 182, 'font-size': 9.5, fill: '#4c7379', 'font-family': MONO }, svg, 'RÁFAGA EJECUTADA');
+    const coreRect = el('rect', { x: G.core.x, y: G.core.y, width: G.core.w, height: G.core.h, fill: '#faf8f3', stroke: meta.accent, 'stroke-width': 1.8 }, svg);
+    el('text', { x: G.core.x + 8, y: G.core.y + 15, 'font-size': 11.5, fill: meta.accent, 'font-family': SANS, 'font-weight': 700, 'letter-spacing': 0.3 }, svg, 'NÚCLEO 0');
+    const led = el('circle', { cx: G.core.x + G.core.w - 14, cy: G.core.y + 11, r: 5, fill: 'none', stroke: INK_FAINT, 'stroke-width': 1.4 }, svg);
+    el('line', { x1: G.core.x, y1: G.core.y + 22, x2: G.core.x + G.core.w, y2: G.core.y + 22, stroke: BLOCK_STROKE }, svg);
+    el('rect', { x: BAY.x - 70, y: BAY.y - 26, width: 140, height: 52, fill: 'none', stroke: INK_FAINT, 'stroke-dasharray': '4 3' }, svg);
+    const bayNote = el('text', { x: BAY.x, y: BAY.y + 4, 'text-anchor': 'middle', 'font-size': 11.5, fill: INK_FAINT, 'font-family': SANS, 'font-style': 'italic' }, svg, 'CPU libre');
+    el('text', { x: 446, y: 182, 'font-size': 9.5, fill: INK_FAINT, 'font-family': SANS }, svg, 'RÁFAGA EJECUTADA');
     const cellsG = el('g', {}, svg);
-    el('text', { x: 606, y: 124, 'font-size': 9.5, fill: '#4c7379', 'font-family': MONO }, svg, 'REGISTROS');
+    el('text', { x: 606, y: 124, 'font-size': 9.5, fill: INK_FAINT, 'font-family': SANS }, svg, 'REGISTROS');
     const regs = {};
     [['PID', 'pid'], ['PC', 'pc'], ['RESTANTE', 'rest'], ['QUANTUM', 'qnt']].forEach(([label, k], i) => {
       const y = 139 + i * 14;
-      el('text', { x: 606, y, 'font-size': 11, fill: '#6f9199', 'font-family': MONO }, svg, label);
-      regs[k] = el('text', { x: 726, y, 'font-size': 12.5, 'font-weight': 700, fill: '#d8e6e8', 'text-anchor': 'end', 'font-family': MONO }, svg, '—');
-      el('line', { x1: 606, y1: y + 3, x2: 726, y2: y + 3, stroke: '#173236' }, svg);
+      el('text', { x: 606, y, 'font-size': 11, fill: INK_SOFT, 'font-family': SANS }, svg, label);
+      regs[k] = el('text', { x: 726, y, 'font-size': 12.5, 'font-weight': 700, fill: INK, 'text-anchor': 'end', 'font-family': MONO }, svg, '—');
+      el('line', { x1: 606, y1: y + 3, x2: 726, y2: y + 3, stroke: 'rgba(28,28,26,0.18)' }, svg);
     });
-    const ucRect = el('rect', { x: 440, y: 222, width: 140, height: 36, rx: 3, fill: '#0a1417', stroke: '#24494e' }, svg);
-    el('text', { x: 510, y: 244, 'text-anchor': 'middle', 'font-size': 11.5, fill: '#6f9199', 'font-family': MONO }, svg, 'UNIDAD CTRL');
-    const aluRect = el('rect', { x: 592, y: 222, width: 136, height: 36, rx: 3, fill: '#0a1417', stroke: '#24494e' }, svg);
-    el('text', { x: 660, y: 244, 'text-anchor': 'middle', 'font-size': 11.5, fill: '#6f9199', 'font-family': MONO }, svg, 'ALU');
-    const ucFlash = el('rect', { x: 440, y: 222, width: 140, height: 36, rx: 3, fill: meta.accent, opacity: 0 }, svg);
-    const aluFlash = el('rect', { x: 592, y: 222, width: 136, height: 36, rx: 3, fill: meta.accent, opacity: 0 }, svg);
+    const ucRect = el('rect', { x: 440, y: 222, width: 140, height: 36, fill: '#ffffff', stroke: BLOCK_STROKE }, svg);
+    el('text', { x: 510, y: 244, 'text-anchor': 'middle', 'font-size': 11.5, fill: INK_SOFT, 'font-family': SANS }, svg, 'UNIDAD CTRL');
+    const aluRect = el('rect', { x: 592, y: 222, width: 136, height: 36, fill: '#ffffff', stroke: BLOCK_STROKE }, svg);
+    el('text', { x: 660, y: 244, 'text-anchor': 'middle', 'font-size': 11.5, fill: INK_SOFT, 'font-family': SANS }, svg, 'ALU');
+    const ucFlash = el('rect', { x: 440, y: 222, width: 140, height: 36, fill: meta.accent, opacity: 0 }, svg);
+    const aluFlash = el('rect', { x: 592, y: 222, width: 136, height: 36, fill: meta.accent, opacity: 0 }, svg);
 
     // planificador: regla y lámpara del último evento
-    el('text', { x: G.sched.x + 8, y: G.sched.y + 33, 'font-size': 11.5, fill: '#a9c1c6', 'font-family': MONO }, svg, RULES[key](sim.quantum));
-    const lampRect = el('rect', { x: G.sched.x + 8, y: G.sched.y + 40, width: 124, height: 18, rx: 3, fill: 'none', stroke: '#33424a' }, svg);
-    const lampText = el('text', { x: G.sched.x + 70, y: G.sched.y + 53, 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': 700, fill: '#56707a', 'font-family': MONO }, svg, 'EN ESPERA');
+    el('text', { x: G.sched.x + 8, y: G.sched.y + 33, 'font-size': 11.5, fill: INK_SOFT, 'font-family': SANS }, svg, RULES[key](sim.quantum));
+    const lampRect = el('rect', { x: G.sched.x + 8, y: G.sched.y + 40, width: 124, height: 18, fill: 'none', stroke: INK_FAINT }, svg);
+    const lampText = el('text', { x: G.sched.x + 70, y: G.sched.y + 53, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 700, fill: INK_FAINT, 'font-family': SANS }, svg, 'EN ESPERA');
 
     // tabla de PCB
     const cols = N <= 6 ? 3 : 4, rows = Math.max(1, Math.ceil(N / cols));
@@ -222,22 +210,22 @@
     procs.forEach((p, i) => {
       const cx = G.pcb.x + 8 + (i % cols) * (tileW + 5), cy = G.pcb.y + 24 + Math.floor(i / cols) * (tileH + 5);
       const gTile = el('g', {}, svg);
-      const r = el('rect', { x: cx, y: cy, width: tileW, height: tileH, rx: 3, fill: '#0a1417', stroke: '#24494e' }, gTile);
+      const r = el('rect', { x: cx, y: cy, width: tileW, height: tileH, fill: '#ffffff', stroke: BLOCK_STROKE }, gTile);
       el('rect', { x: cx, y: cy, width: 4, height: tileH, fill: colorOf(p.id) }, gTile);
-      el('text', { x: cx + 10, y: two ? cy + 14 : cy + tileH / 2 + 4, 'font-size': two ? 12.5 : 11.5, 'font-weight': 700, fill: '#e7ebf2', 'font-family': MONO }, gTile, 'P' + p.id);
-      const rest = el('text', { x: cx + tileW - 6, y: cy + 14, 'font-size': 11.5, fill: '#8fb0b6', 'text-anchor': 'end', 'font-family': MONO }, gTile, '');
+      el('text', { x: cx + 10, y: two ? cy + 14 : cy + tileH / 2 + 4, 'font-size': two ? 12.5 : 11.5, 'font-weight': 700, fill: INK, 'font-family': MONO }, gTile, 'P' + p.id);
+      const rest = el('text', { x: cx + tileW - 6, y: cy + 14, 'font-size': 11.5, fill: INK_SOFT, 'text-anchor': 'end', 'font-family': MONO }, gTile, '');
       const state = two
-        ? el('text', { x: cx + 10, y: cy + tileH - 7, 'font-size': 9.5, 'font-weight': 700, fill: '#6b7a90', 'font-family': MONO }, gTile, '')
-        : el('text', { x: cx + tileW - 6, y: cy + tileH / 2 + 3.5, 'font-size': 9, 'font-weight': 700, fill: '#6b7a90', 'text-anchor': 'end', 'font-family': MONO }, gTile, '');
-      const flash = el('rect', { x: cx, y: cy, width: tileW, height: tileH, rx: 3, fill: '#fff', opacity: 0 }, gTile);
-      const focus = el('rect', { x: cx - 1.5, y: cy - 1.5, width: tileW + 3, height: tileH + 3, rx: 4, fill: 'none', stroke: '#fff', 'stroke-width': 1.6, opacity: 0 }, gTile);
+        ? el('text', { x: cx + 10, y: cy + tileH - 7, 'font-size': 9, 'font-weight': 700, fill: INK_FAINT, 'font-family': SANS }, gTile, '')
+        : el('text', { x: cx + tileW - 6, y: cy + tileH / 2 + 3.5, 'font-size': 8.5, 'font-weight': 700, fill: INK_FAINT, 'text-anchor': 'end', 'font-family': SANS }, gTile, '');
+      const flash = el('rect', { x: cx, y: cy, width: tileW, height: tileH, fill: '#f7ecc9', opacity: 0 }, gTile);
+      const focus = el('rect', { x: cx - 1.5, y: cy - 1.5, width: tileW + 3, height: tileH + 3, fill: 'none', stroke: INK, 'stroke-width': 1.6, opacity: 0 }, gTile);
       tiles[p.id] = { r, rest, state, flash, focus };
     });
 
     // reloj
     block(G.clock, 'RELOJ');
     const waveHolder = el('g', { 'clip-path': `url(#${uid}-clk)` }, svg);
-    el('rect', { x: CLOCK_X0 + CLOCK_POS * CYCLE_W, y: G.clock.y + 3, width: CYCLE_W, height: G.clock.h - 6, fill: meta.accent, opacity: 0.16 }, waveHolder);
+    el('rect', { x: CLOCK_X0 + CLOCK_POS * CYCLE_W, y: G.clock.y + 3, width: CYCLE_W, height: G.clock.h - 6, fill: meta.accent, opacity: 0.14 }, waveHolder);
     const waveG = el('g', {}, waveHolder);
     const nCyc = Math.min(sim.maxTime + 24, 420);
     const yh = G.clock.y + 8, yl = G.clock.y + 16;
@@ -246,7 +234,7 @@
       const x0 = i * CYCLE_W;
       d += ` L${x0} ${yl} L${x0} ${yh} L${x0 + CYCLE_W / 2} ${yh} L${x0 + CYCLE_W / 2} ${yl}`;
       if(i <= sim.maxTime)
-        el('text', { x: x0 + CYCLE_W / 2, y: G.clock.y + 25.5, 'text-anchor': 'middle', 'font-size': 8.5, fill: '#4c7379', 'font-family': MONO }, waveG, String(i));
+        el('text', { x: x0 + CYCLE_W / 2, y: G.clock.y + 25.5, 'text-anchor': 'middle', 'font-size': 8.5, fill: INK_FAINT, 'font-family': MONO }, waveG, String(i));
     }
     el('path', { d, fill: 'none', stroke: meta.accent, 'stroke-width': 1.6, opacity: 0.9 }, waveG);
     function setClock(v){
@@ -258,10 +246,10 @@
     const tokens = {};
     procs.forEach(p => {
       const gEl = el('g', { 'data-id': p.id }, tokLayer);
-      const rect = el('rect', { rx: 4, fill: colorOf(p.id), stroke: 'rgba(0,0,0,.35)' }, gEl);
-      const follow = el('rect', { rx: 6, fill: 'none', stroke: '#fff', 'stroke-width': 2, opacity: 0 }, gEl);
-      const main = el('text', { 'font-family': 'JetBrains Mono, monospace', 'font-weight': 700, fill: '#0a0d12' }, gEl, 'P' + p.id);
-      const sub = el('text', { 'font-family': 'JetBrains Mono, monospace', 'font-weight': 600, fill: '#0a0d12', opacity: 0.8 }, gEl, '');
+      const rect = el('rect', { fill: colorOf(p.id), stroke: 'rgba(0,0,0,.4)' }, gEl);
+      const follow = el('rect', { fill: 'none', stroke: '#1c1c1a', 'stroke-width': 2, opacity: 0 }, gEl);
+      const main = el('text', { 'font-family': 'JetBrains Mono, monospace', 'font-weight': 700, fill: '#1c1c1a' }, gEl, 'P' + p.id);
+      const sub = el('text', { 'font-family': 'JetBrains Mono, monospace', 'font-weight': 600, fill: '#1c1c1a', opacity: 0.75 }, gEl, '');
       tokens[p.id] = { g: gEl, rect, follow, main, sub, zone: 'mem', x: 0, y: 0, w: 40, h: 30, id: p.id };
     });
 
@@ -327,13 +315,12 @@
         regs.qnt.textContent = key === 'RR' && seg ? `${(t - seg.start) % sim.quantum}/${sim.quantum}` : '—';
         bayNote.textContent = '';
         led.setAttribute('fill', meta.accent);
-        led.setAttribute('filter', `url(#${uid}-glow)`);
-        coreRect.setAttribute('filter', `url(#${uid}-glow)`);
+        led.setAttribute('stroke', meta.accent);
       } else {
         regs.pid.textContent = '—'; regs.pc.textContent = '—'; regs.rest.textContent = '—'; regs.qnt.textContent = '—';
         bayNote.textContent = st.allDone ? 'terminado' : 'CPU libre';
-        led.setAttribute('fill', st.allDone ? '#9d8bff' : '#33424a');
-        led.removeAttribute('filter'); coreRect.removeAttribute('filter');
+        led.setAttribute('fill', st.allDone ? '#3d3a6b' : 'none');
+        led.setAttribute('stroke', st.allDone ? '#3d3a6b' : '#8a877e');
       }
       // celdas de la ráfaga en ejecución
       cellsG.innerHTML = '';
@@ -343,8 +330,8 @@
         const cw = 150 / cells;
         const filled = Math.round(cells * info.executed / info.burst);
         for(let i = 0; i < cells; i++)
-          el('rect', { x: 446 + i * cw + 0.8, y: 186, width: Math.max(1, cw - 1.6), height: 8, rx: 1,
-            fill: i < filled ? colorOf(run.id) : '#16292d' }, cellsG);
+          el('rect', { x: 446 + i * cw + 0.8, y: 186, width: Math.max(1, cw - 1.6), height: 8,
+            fill: i < filled ? colorOf(run.id) : '#efece3', stroke: i < filled ? 'none' : 'rgba(28,28,26,0.18)' }, cellsG);
       }
       // PCB
       procs.forEach(p => {
@@ -354,21 +341,21 @@
         tl.state.textContent = LONG ? meta2.label : meta2.short; tl.state.setAttribute('fill', meta2.color);
         const info = st.procInfo(p.id);
         tl.rest.textContent = !two ? '' : (e.zone === 'done' ? '0' : String(info.remaining));
-        tl.r.setAttribute('stroke', e.zone === 'core' ? meta.accent : '#24494e');
+        tl.r.setAttribute('stroke', e.zone === 'core' ? meta.accent : 'rgba(28,28,26,0.4)');
         tl.focus.setAttribute('opacity', follow === p.id ? 1 : 0);
       });
       // lámpara del planificador y pie de tarjeta
       const lg = lastLog(t);
-      const km = lg ? (KIND[lg.kind] || { label: lg.kind.toUpperCase(), color: '#8d99b0' }) : null;
+      const km = lg ? (KIND[lg.kind] || { label: lg.kind.toUpperCase(), color: '#8a877e' }) : null;
       if(km){
         lampText.textContent = km.label; lampText.setAttribute('fill', km.color); lampRect.setAttribute('stroke', km.color);
         kindEl.textContent = km.label; kindEl.style.color = km.color; kindEl.style.borderColor = km.color;
         whyEl.textContent = lg.text; whyEl.title = lg.text;
       } else {
-        lampText.textContent = 'EN ESPERA'; lampText.setAttribute('fill', '#56707a'); lampRect.setAttribute('stroke', '#33424a');
+        lampText.textContent = 'EN ESPERA'; lampText.setAttribute('fill', '#8a877e'); lampRect.setAttribute('stroke', '#8a877e');
         kindEl.textContent = ''; whyEl.textContent = 'Aún no ocurre ninguna decisión.';
       }
-      if(t >= sim.maxTime){ kindEl.textContent = 'FIN'; kindEl.style.color = '#9d8bff'; kindEl.style.borderColor = '#9d8bff'; whyEl.textContent = `Todos los procesos terminaron en t=${data.ownFinish}.`; }
+      if(t >= sim.maxTime){ kindEl.textContent = 'FIN'; kindEl.style.color = '#3d3a6b'; kindEl.style.borderColor = '#3d3a6b'; whyEl.textContent = `Todos los procesos terminaron en t=${data.ownFinish}.`; }
       // proceso seguido
       procs.forEach(p => tokens[p.id].follow.setAttribute('opacity', follow === p.id ? 1 : 0));
     }
