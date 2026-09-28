@@ -67,6 +67,9 @@ const clockText = $('clockText');
 const verdictsEl = $('verdicts');
 const verdictTextEl = $('verdictText');
 const finishTableBody = $('finishTableBody');
+const finishTableModalBody = $('finishTableModalBody');
+const finishModalBackdrop = $('finishModalBackdrop');
+const finishModalClose = $('finishModalClose');
 const compareCanvas = $('compareCanvas');
 const themeToggle = $('themeToggle');
 
@@ -380,10 +383,18 @@ function finishTimesByProcess(){
 }
 
 function renderFinishTable(){
-  finishTableBody.innerHTML = finishTimesByProcess().map(row => `
+  const rowsHtml = finishTimesByProcess().map(row => `
     <tr><td>P${row.id}</td>${row.times.map(t => `<td class="${t === row.min ? 'fastest' : ''}">${t}</td>`).join('')}</tr>
   `).join('');
+  finishTableBody.innerHTML = rowsHtml;
+  finishTableModalBody.innerHTML = rowsHtml;
 }
+
+function openFinishModal(){ finishModalBackdrop.hidden = false; }
+function closeFinishModal(){ finishModalBackdrop.hidden = true; }
+finishModalClose.addEventListener('click', closeFinishModal);
+finishModalBackdrop.addEventListener('click', (e) => { if(e.target === finishModalBackdrop) closeFinishModal(); });
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && !finishModalBackdrop.hidden) closeFinishModal(); });
 
 /** Redacta, a partir de las métricas ya calculadas, un párrafo que explica
  * cuál algoritmo conviene más con estos datos y por qué — no un solo
@@ -490,7 +501,11 @@ function stopPlaying(){
 }
 function tick(){
   if(!playing) return;
-  if(cursorTime >= sim.maxTime){ stopPlaying(); return; }
+  if(cursorTime >= sim.maxTime){
+    stopPlaying();
+    if(currentView === 'procesador') openFinishModal();
+    return;
+  }
   updateCursor(cursorTime+1, { animate: true });
   playTimer = setTimeout(tick, 650/playSpeed);
 }

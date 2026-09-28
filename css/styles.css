@@ -703,3 +703,30 @@ body.fit .proc-grid{ gap: 8px; }
 .finish-table-wrap{ margin: 4px 18px 18px; }
 .finish-table-title{ font-size: 13px; font-family: var(--font-sans); font-weight:700; color: var(--ink-soft); margin: 0 0 8px; }
 .finish-table td.fastest{ font-weight:700; color: var(--ink); background: var(--gold-wash); }
+
+/* ventana emergente con la tabla de tiempos, al terminar de simular en Procesador */
+.modal-backdrop{
+  position: fixed; inset: 0; background: rgba(10,10,8,0.55); z-index: 200;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-backdrop[hidden]{ display: none; }
+.modal{
+  background: var(--paper); border: 1px solid var(--rule-strong); max-width: 560px; width: 100%;
+  max-height: 85vh; overflow: auto; padding: 20px 22px;
+}
+.modal-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:16px; }
+.modal-head h3{ font-size:16.5px; line-height:1.35; }
+.modal-close{
+  background: var(--paper); border:1px solid var(--rule-strong); color: var(--ink-faint); cursor:pointer;
+  width:28px; height:28px; font-size:13px; flex-shrink:0;
+}
+.modal-close:hover{ border-color: var(--maroon); color: var(--maroon); }
+.modal-hint{ margin: 16px 0 0; font-size:12px; color: var(--ink-faint); font-style: italic; }
+
+[data-theme="dark"] .modal-backdrop{ background: rgba(0,0,0,0.7); }
+[data-theme="dark"] .modal{
+  border: none; border-top: 2px solid var(--role-amber);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+}
+[data-theme="dark"] .modal-hint{ font-style: normal; }
+[data-theme="dark"] .modal-close:hover{ border-color: var(--role-red); color: var(--role-red); }

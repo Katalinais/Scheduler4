@@ -199,6 +199,19 @@
 
 <div class="tooltip" id="tooltip"></div>
 
+<div class="modal-backdrop" id="finishModalBackdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="finishModalTitle">
+    <div class="modal-head">
+      <h3 id="finishModalTitle">¿Qué algoritmo termina antes a cada proceso?</h3>
+      <button class="modal-close" id="finishModalClose" aria-label="Cerrar">✕</button>
+    </div>
+    <table class="detail-table finish-table">
+      <thead><tr><th>Proceso</th><th>FCFS</th><th>SJF</th><th>SRTF</th><th>RR</th></tr></thead>
+      <tbody id="finishTableModalBody"></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- Algoritmos: cada uno en su propio archivo, sin mezclarse entre sí -->
 <script src="js/algorithms/fcfs.js"></script>
 <script src="js/algorithms/sjf.js"></script>
