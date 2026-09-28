@@ -193,7 +193,10 @@
     // núcleo
     const coreRect = el('rect', { x: G.core.x, y: G.core.y, width: G.core.w, height: G.core.h, fill: CT.paperAlt, stroke: meta.accent, 'stroke-width': 1.8 }, svg);
     el('text', { x: G.core.x + 8, y: G.core.y + 15, 'font-size': 11.5, fill: meta.accent, 'font-family': SANS, 'font-weight': 700, 'letter-spacing': 0.3 }, svg, 'NÚCLEO 0');
-    const led = el('circle', { cx: G.core.x + G.core.w - 14, cy: G.core.y + 11, r: 5, fill: 'none', stroke: INK_FAINT, 'stroke-width': 1.4 }, svg);
+    const LED_CX = G.core.x + G.core.w - 14, LED_CY = G.core.y + 11;
+    // chispa de arranque: un anillo que crece y se desvanece justo detrás del punto de estado
+    const ledSpark = el('circle', { cx: LED_CX, cy: LED_CY, r: 5, fill: 'none', stroke: meta.accent, 'stroke-width': 1.5, opacity: 0 }, svg);
+    const led = el('circle', { cx: LED_CX, cy: LED_CY, r: 5, fill: 'none', stroke: INK_FAINT, 'stroke-width': 1.4 }, svg);
     el('line', { x1: G.core.x, y1: G.core.y + 22, x2: G.core.x + G.core.w, y2: G.core.y + 22, stroke: BLOCK_STROKE }, svg);
     el('rect', { x: BAY.x - 70, y: BAY.y - 26, width: 140, height: 52, fill: 'none', stroke: INK_FAINT, 'stroke-dasharray': '4 3' }, svg);
     const bayNote = el('text', { x: BAY.x, y: BAY.y + 4, 'text-anchor': 'middle', 'font-size': 11.5, fill: INK_FAINT, 'font-family': SANS, 'font-style': 'italic' }, svg, 'CPU libre');
@@ -201,11 +204,14 @@
     const cellsG = el('g', {}, svg);
     el('text', { x: 606, y: 124, 'font-size': 9.5, fill: INK_FAINT, 'font-family': SANS }, svg, 'REGISTROS');
     const regs = {};
+    let restFlash = null;
     [['PID', 'pid'], ['PC', 'pc'], ['RESTANTE', 'rest'], ['QUANTUM', 'qnt']].forEach(([label, k], i) => {
       const y = 139 + i * 14;
       el('text', { x: 606, y, 'font-size': 11, fill: INK_SOFT, 'font-family': SANS }, svg, label);
       regs[k] = el('text', { x: 726, y, 'font-size': 12.5, 'font-weight': 700, fill: INK, 'text-anchor': 'end', 'font-family': MONO }, svg, '—');
       el('line', { x1: 606, y1: y + 3, x2: 726, y2: y + 3, stroke: CT.hairline }, svg);
+      // fila de RESTANTE: un resalte suave que parpadea cada vez que el reloj avanza una unidad
+      if(k === 'rest') restFlash = el('rect', { x: 602, y: y - 11, width: 128, height: 15, fill: meta.accent, opacity: 0 }, svg);
     });
     const ucRect = el('rect', { x: 440, y: 222, width: 140, height: 36, fill: CT.paper, stroke: BLOCK_STROKE }, svg);
     el('text', { x: 510, y: 244, 'text-anchor': 'middle', 'font-size': 11.5, fill: INK_SOFT, 'font-family': SANS }, svg, 'UNIDAD CTRL');
@@ -316,6 +322,23 @@
     }
 
     let follow = null;
+    let burstCells = null; // { runId, count, cw, fill:[Rect] } — persisten mientras el mismo proceso sigue corriendo
+
+    /** Crea (o reutiliza) las celdas de la ráfaga del proceso que está en el núcleo. */
+    function ensureBurstCells(runId, burstTotal){
+      if(burstCells && burstCells.runId === runId) return burstCells;
+      cellsG.innerHTML = '';
+      const count = Math.min(burstTotal, 24);
+      const cw = 150 / count;
+      const fill = [];
+      for(let i = 0; i < count; i++){
+        const x = 446 + i * cw + 0.8, w = Math.max(1, cw - 1.6);
+        el('rect', { x, y: 186, width: w, height: 8, fill: CT.paperAlt, stroke: BLOCK_STROKE }, cellsG);
+        fill.push(el('rect', { x, y: 186, width: 0, height: 8, fill: colorOf(runId) }, cellsG));
+      }
+      burstCells = { runId, count, cw, fill };
+      return burstCells;
+    }
 
     /** Partes del chip que no son fichas: registros, PCB, planificador, subtítulos. */
     function updateStatic(L){
@@ -342,15 +365,13 @@
         led.setAttribute('stroke', st.allDone ? STATE.done.color : INK_FAINT);
       }
       // celdas de la ráfaga en ejecución
-      cellsG.innerHTML = '';
       if(run){
         const info = st.procInfo(run.id);
-        const cells = Math.min(info.burst, 24);
-        const cw = 150 / cells;
-        const filled = Math.round(cells * info.executed / info.burst);
-        for(let i = 0; i < cells; i++)
-          el('rect', { x: 446 + i * cw + 0.8, y: 186, width: Math.max(1, cw - 1.6), height: 8,
-            fill: i < filled ? colorOf(run.id) : CT.paperAlt, stroke: i < filled ? 'none' : BLOCK_STROKE }, cellsG);
+        const bc = ensureBurstCells(run.id, info.burst);
+        const filled = Math.round(bc.count * info.executed / info.burst);
+        bc.fill.forEach((r, i) => r.setAttribute('width', i < filled ? Math.max(1, bc.cw - 1.6) : 0));
+      } else if(burstCells){
+        cellsG.innerHTML = ''; burstCells = null;
       }
       // PCB
       procs.forEach(p => {
@@ -415,7 +436,16 @@
       // ejecución de una unidad de tiempo en el núcleo
       if(execD && A.st.running){
         flash(aluFlash, 0, D, 0.85);
+        flash(restFlash, 0, D, 0.55);
         tl.fromTo(coreRect, { attr: { 'stroke-width': 1.6 } }, { attr: { 'stroke-width': 3.4 }, duration: execD * 0.5, yoyo: true, repeat: 1 }, 0);
+        // la celda de ráfaga que se completa en este paso crece hasta llenarse
+        const info = A.st.procInfo(A.st.running.id);
+        const bc = ensureBurstCells(A.st.running.id, info.burst);
+        const idx = Math.round(bc.count * info.executed / info.burst);
+        if(bc.fill[idx]){
+          tl.fromTo(bc.fill[idx], { attr: { width: 0 } },
+            { attr: { width: Math.max(1, bc.cw - 1.6) }, duration: execD * 0.85, ease: 'power1.out' }, 0);
+        }
       }
 
       // cambio de contexto: guardar PCB del que sale, cargar el del que entra
@@ -425,6 +455,11 @@
         flash(ucFlash, execD, D, 0.8);
         if(outId !== null) flash(tiles[outId].flash, execD, D, 0.55);
         if(inId !== null) flash(tiles[inId].flash, execD + D * 0.2, D, 0.55);
+        // chispa de arranque: un proceso nuevo toma la CPU
+        if(inId !== null){
+          tl.fromTo(ledSpark, { attr: { r: 5 }, opacity: 0.9 },
+            { attr: { r: 12 }, opacity: 0, duration: D * 0.4, ease: 'power1.out' }, execD + D * 0.15);
+        }
       }
 
       // recorrido de las fichas

@@ -65,6 +65,8 @@ const statusLed = $('statusLed');
 const statusText = $('statusText');
 const clockText = $('clockText');
 const verdictsEl = $('verdicts');
+const verdictTextEl = $('verdictText');
+const finishTableBody = $('finishTableBody');
 const compareCanvas = $('compareCanvas');
 const themeToggle = $('themeToggle');
 
@@ -342,7 +344,7 @@ function runSimulation(){
     Scheduler.ProcessorView.setSim(sim);
     Scheduler.StepView.setSim(sim);
     updateCursor(0);
-    if(currentView === 'dashboard') renderCompare();
+    renderCompare();
     setStatus('ready', 'Listo.');
   }, 220);
 }
@@ -364,6 +366,68 @@ function renderCompare(){
     <div class="verdict-badge">MENOR ESPERA PROMEDIO: ${bestWaiting.label} (${bestWaiting.avgWaiting.toFixed(2)})</div>
     <div class="verdict-badge">MENOR RETORNO PROMEDIO: ${bestTurn.label} (${bestTurn.avgTurnaround.toFixed(2)})</div>
   `;
+  verdictTextEl.innerHTML = buildVerdictText();
+  renderFinishTable();
+}
+
+/** Tiempo en que cada algoritmo termina CADA proceso — la pregunta "¿cuál es
+ * más rápido para P3?" no la responde el promedio, la responde esta tabla. */
+function finishTimesByProcess(){
+  return sim.procs.map(p => {
+    const times = ALGO_ORDER.map(key => sim.algos[key].metrics.per.find(x => x.id === p.id).completion);
+    return { id: p.id, times, min: Math.min(...times) };
+  });
+}
+
+function renderFinishTable(){
+  finishTableBody.innerHTML = finishTimesByProcess().map(row => `
+    <tr><td>P${row.id}</td>${row.times.map(t => `<td class="${t === row.min ? 'fastest' : ''}">${t}</td>`).join('')}</tr>
+  `).join('');
+}
+
+/** Redacta, a partir de las métricas ya calculadas, un párrafo que explica
+ * cuál algoritmo conviene más con estos datos y por qué — no un solo
+ * número, porque ningún algoritmo gana en las cuatro métricas a la vez. */
+function buildVerdictText(){
+  const rows = ALGO_ORDER.map(key => {
+    const m = sim.algos[key].metrics;
+    return {
+      key, label: ALGO_META[key].label,
+      avgWaiting: m.avgWaiting, avgTurnaround: m.avgTurnaround,
+      avgResponse: m.avgResponse, contextSwitches: m.contextSwitches,
+      starving: m.starving,
+    };
+  });
+  const byWait = [...rows].sort((a,b)=>a.avgWaiting-b.avgWaiting);
+  const byResp = [...rows].sort((a,b)=>a.avgResponse-b.avgResponse);
+  const bySwitch = [...rows].sort((a,b)=>a.contextSwitches-b.contextSwitches);
+  const best = byWait[0], worst = byWait[byWait.length-1];
+  const bestResp = byResp[0];
+  const fewest = bySwitch[0];
+  const starvingRows = rows.filter(r => r.starving && r.starving.length);
+
+  const sentences = [];
+  sentences.push(
+    `Con estos datos, <strong>${best.label}</strong> logra la menor espera promedio (${best.avgWaiting.toFixed(2)}) y, con ella, también el menor retorno promedio (${best.avgTurnaround.toFixed(2)}). No es casualidad: el retorno promedio es siempre la espera promedio más la ráfaga promedio, y esa ráfaga promedio es la misma para los cuatro, así que quien gana en espera gana también en retorno.`
+  );
+  sentences.push(
+    bestResp.key !== best.key
+      ? `En respuesta gana <strong>${bestResp.label}</strong> (${bestResp.avgResponse.toFixed(2)}), aunque no sea el que menos espera en total.`
+      : `${bestResp.label} también da la mejor respuesta (${bestResp.avgResponse.toFixed(2)}).`
+  );
+  if(fewest.key !== best.key && fewest.key !== bestResp.key){
+    sentences.push(`${fewest.label} es el que menos cambia de contexto (${fewest.contextSwitches}).`);
+  }
+  if(worst.key !== best.key){
+    sentences.push(`${worst.label} deja la peor espera promedio con este conjunto de procesos (${worst.avgWaiting.toFixed(2)}).`);
+  }
+  sentences.push(
+    starvingRows.length
+      ? `Hay señal de posible inanición en ${starvingRows.map(r => `${r.label} (${r.starving.map(id=>'P'+id).join(', ')})`).join(' y ')}.`
+      : 'Ningún proceso muestra señales de inanición con estos datos.'
+  );
+  sentences.push('Ningún algoritmo gana en todo: la mejor elección depende de si priorizas la espera total, la respuesta inmediata o la previsibilidad.');
+  return sentences.join(' ');
 }
 
 function markStale(){
@@ -460,7 +524,8 @@ $('btnExport').addEventListener('click', ()=>{
   const marginX = 40;
   const width = trackW + marginX*2;
   const headerH = 90, legendH = 26, channelBlockH = 116, chartH = 240;
-  const height = headerH + legendH + channelBlockH*4 + chartH + 40;
+  const finishRowH = 20, finishTableH = 30 + finishRowH + sim.procs.length*finishRowH + 14;
+  const height = headerH + legendH + channelBlockH*4 + chartH + finishTableH + 40;
 
   const c = document.createElement('canvas');
   const dpr = window.devicePixelRatio || 1;
@@ -528,6 +593,40 @@ $('btnExport').addEventListener('click', ()=>{
   }));
   Render.drawComparisonChart(ctx, trackW+12, chartH-20, compareData);
   ctx.restore();
+  y += chartH;
+
+  // tabla: en qué instante termina cada proceso, bajo cada algoritmo
+  ctx.font = '700 13px "PT Serif", Georgia, serif';
+  ctx.fillStyle = XT.ink; ctx.textAlign = 'left';
+  ctx.fillText('¿Qué algoritmo termina antes a cada proceso?', marginX, y + 14);
+  y += 30;
+  const cols = ['Proceso', ...ALGO_ORDER.map(k => ALGO_META[k].label)];
+  const colW = trackW / cols.length;
+  ctx.font = '700 10.5px "JetBrains Mono", monospace';
+  ctx.fillStyle = XT.inkSoft;
+  cols.forEach((c,i) => {
+    ctx.textAlign = i===0 ? 'left' : 'right';
+    ctx.fillText(c, marginX + i*colW + (i===0 ? 0 : colW-4), y);
+  });
+  ctx.strokeStyle = XT.ink; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(marginX, y+6); ctx.lineTo(marginX+trackW, y+6); ctx.stroke();
+  y += finishRowH;
+  finishTimesByProcess().forEach(row => {
+    ctx.fillStyle = XT.ink; ctx.font = '600 11px "JetBrains Mono", monospace'; ctx.textAlign = 'left';
+    ctx.fillText('P'+row.id, marginX, y);
+    row.times.forEach((t,i) => {
+      const isFastest = t === row.min;
+      ctx.font = (isFastest ? '700 ' : '500 ') + '11px "JetBrains Mono", monospace';
+      ctx.fillStyle = isFastest ? XT.ink : XT.inkSoft;
+      ctx.textAlign = 'right';
+      ctx.fillText(String(t), marginX + (i+1)*colW + colW-4, y);
+    });
+    ctx.save(); ctx.globalAlpha = 0.3; ctx.strokeStyle = XT.inkFaint;
+    ctx.beginPath(); ctx.moveTo(marginX, y+5); ctx.lineTo(marginX+trackW, y+5); ctx.stroke();
+    ctx.restore();
+    y += finishRowH;
+  });
+  y += 14;
 
   ctx.fillStyle = XT.inkFaint;
   ctx.font = 'italic 10px "PT Serif", Georgia, serif';
@@ -553,7 +652,8 @@ let resizeTimer = null;
 window.addEventListener('resize', ()=>{
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(()=>{
-    if(sim && currentView === 'dashboard'){ redrawAll(); renderCompare(); }
+    if(sim && currentView === 'dashboard') redrawAll();
+    if(sim) renderCompare();
     fitProcPanel();
   }, 150);
 });

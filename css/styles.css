@@ -690,3 +690,16 @@ body.fit .proc-grid{ gap: 8px; }
 
 /* chip del procesador: vuelve el resplandor del núcleo activo */
 [data-theme="dark"] .chip-card{ background:#080d10; }
+
+/* texto explicativo al final de la comparación */
+.verdict-text{
+  margin: 4px 18px 18px; max-width: 900px; color: var(--ink-soft);
+  font-size: 13.5px; line-height: 1.7;
+}
+.verdict-text strong{ color: var(--ink); }
+[data-theme="dark"] .verdict-text strong{ color: var(--role-amber); }
+
+/* tabla de tiempos de finalización por proceso, dentro de Fig. 3 */
+.finish-table-wrap{ margin: 4px 18px 18px; }
+.finish-table-title{ font-size: 13px; font-family: var(--font-sans); font-weight:700; color: var(--ink-soft); margin: 0 0 8px; }
+.finish-table td.fastest{ font-weight:700; color: var(--ink); background: var(--gold-wash); }
