@@ -24,6 +24,30 @@
     return e;
   }
 
+  function cssVar(name, fallback){
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  }
+  /** Colores del chip según el tema activo — se resuelve de nuevo al crear cada chip. */
+  function chipTheme(){
+    const ink = cssVar('--ink', '#1c1c1a');
+    const rgba = (g.Scheduler.Render && g.Scheduler.Render.hexToRgba) || ((h,a)=>h);
+    return {
+      ink, inkSoft: cssVar('--ink-soft', '#4a4a46'), inkFaint: cssVar('--ink-faint', '#8a877e'),
+      paper: cssVar('--paper', '#ffffff'), paperAlt: cssVar('--paper-alt', '#faf8f3'), bg: cssVar('--bg', '#f1f0ea'),
+      blockStroke: rgba(ink, 0.4), gridStroke: rgba(ink, 0.05), goldWash: cssVar('--gold-wash', '#f7ecc9'),
+      faintLine: rgba(ink, 0.25), hairline: rgba(ink, 0.18),
+    };
+  }
+  function stateMeta(){
+    return {
+      mem:   { label: 'NUEVO',      short: 'NUEVO', color: cssVar('--state-new', '#8a877e') },
+      queue: { label: 'LISTO',      short: 'LISTO', color: cssVar('--state-ready', '#96731c') },
+      core:  { label: 'EJECUCIÓN',  short: 'EJEC.', color: cssVar('--state-exec', '#2f5233') },
+      done:  { label: 'TERMINADO',  short: 'TERM.', color: cssVar('--state-done', '#3d3a6b') },
+    };
+  }
+
   /* ----------------------------- geometría ----------------------------- */
   // Formato ancho y bajo (2,3:1) para que los 4 chips quepan juntos en una pantalla.
   const W = 760, H = 334;
@@ -39,13 +63,6 @@
   };
   const BUS_X = 142, QY = 62, HEAD_X = 392, CORR_Y = 85, ENTRY_Y = 104, BAY = { x: 516, y: 142 };
   const CYCLE_W = 24, CLOCK_X0 = G.clock.x + 70, CLOCK_POS = 5;
-
-  const STATE_META = {
-    mem:   { label: 'NUEVO',      short: 'NUEVO', color: '#8a877e' },
-    queue: { label: 'LISTO',      short: 'LISTO', color: '#96731c' },
-    core:  { label: 'EJECUCIÓN',  short: 'EJEC.', color: '#2f5233' },
-    done:  { label: 'TERMINADO',  short: 'TERM.', color: '#3d3a6b' },
-  };
 
   function zonePos(zone, idx, n){
     if(zone === 'mem'){
@@ -111,7 +128,9 @@
     const per = data.metrics.per;
     const procs = sim.procs;
     const N = procs.length;
-    const KIND = (g.Scheduler.DecisionLog && g.Scheduler.DecisionLog.KIND_META) || {};
+    const KIND = (g.Scheduler.DecisionLog && g.Scheduler.DecisionLog.kindMeta()) || {};
+    const STATE = stateMeta();
+    const CT = chipTheme();
     const uid = 'chip' + key;
 
     const card = document.createElement('div');
@@ -134,16 +153,16 @@
     /* defs */
     const defs = el('defs', {}, svg);
     const pat = el('pattern', { id: uid + '-grid', width: 16, height: 16, patternUnits: 'userSpaceOnUse' }, defs);
-    el('path', { d: 'M16 0H0V16', fill: 'none', stroke: 'rgba(28,28,26,0.05)', 'stroke-width': 0.6 }, pat);
+    el('path', { d: 'M16 0H0V16', fill: 'none', stroke: CT.gridStroke, 'stroke-width': 0.6 }, pat);
     const clip = el('clipPath', { id: uid + '-clk' }, defs);
     el('rect', { x: CLOCK_X0, y: G.clock.y, width: G.clock.x + G.clock.w - CLOCK_X0, height: G.clock.h }, clip);
 
     const MONO = 'JetBrains Mono, monospace';
     const SANS = '"PT Sans", "Helvetica Neue", Arial, sans-serif';
-    const INK = '#1c1c1a', INK_SOFT = '#4a4a46', INK_FAINT = '#8a877e', BLOCK_STROKE = 'rgba(28,28,26,0.4)';
+    const INK = CT.ink, INK_SOFT = CT.inkSoft, INK_FAINT = CT.inkFaint, BLOCK_STROKE = CT.blockStroke;
 
     /* marco de la figura, sobre papel, con textura de papel cuadriculado */
-    el('rect', { x: G.die.x, y: G.die.y, width: G.die.w, height: G.die.h, fill: '#fdfcfa', stroke: INK, 'stroke-width': 1.5 }, svg);
+    el('rect', { x: G.die.x, y: G.die.y, width: G.die.w, height: G.die.h, fill: CT.paper, stroke: INK, 'stroke-width': 1.5 }, svg);
     el('rect', { x: G.die.x, y: G.die.y, width: G.die.w, height: G.die.h, fill: `url(#${uid}-grid)` }, svg);
     el('text', { x: G.die.x + 10, y: G.die.y + 15, 'font-size': 10.5, fill: INK_FAINT, 'font-family': SANS, 'letter-spacing': 0.5 },
       svg, `CPU · 1 NÚCLEO · ${meta.label}`);
@@ -159,20 +178,20 @@
 
     /* bloques */
     function block(r, title, extra){
-      el('rect', { x: r.x, y: r.y, width: r.w, height: r.h, fill: '#ffffff', stroke: BLOCK_STROKE, 'stroke-width': 1.2 }, svg);
+      el('rect', { x: r.x, y: r.y, width: r.w, height: r.h, fill: CT.paper, stroke: BLOCK_STROKE, 'stroke-width': 1.2 }, svg);
       el('text', { x: r.x + 8, y: r.y + 15, 'font-size': 11, fill: INK_SOFT, 'font-family': SANS, 'font-weight': 700, 'letter-spacing': 0.3 }, svg, title);
       if(extra) el('text', { x: r.x + r.w - 8, y: r.y + 15, 'font-size': 10.5, fill: INK_FAINT, 'font-family': SANS, 'font-style': 'italic', 'text-anchor': 'end' }, svg, extra);
     }
     block(G.mem, 'MEMORIA');
     el('text', { x: G.mem.x + 8, y: G.mem.y + 29, 'font-size': 10.5, fill: INK_FAINT, 'font-family': SANS, 'font-style': 'italic' }, svg, 'por llegar');
     block(G.queue, 'COLA DE LISTOS', 'cabeza');
-    el('line', { x1: G.queue.x + 6, y1: QY, x2: G.queue.x + G.queue.w - 6, y2: QY, stroke: 'rgba(28,28,26,0.25)', 'stroke-dasharray': '3 4' }, svg);
+    el('line', { x1: G.queue.x + 6, y1: QY, x2: G.queue.x + G.queue.w - 6, y2: QY, stroke: CT.faintLine, 'stroke-dasharray': '3 4' }, svg);
     block(G.sched, 'PLANIFICADOR', meta.label);
     block(G.pcb, 'TABLA DE PCB', 'memoria del SO');
     block(G.done, 'TERMINADOS');
 
     // núcleo
-    const coreRect = el('rect', { x: G.core.x, y: G.core.y, width: G.core.w, height: G.core.h, fill: '#faf8f3', stroke: meta.accent, 'stroke-width': 1.8 }, svg);
+    const coreRect = el('rect', { x: G.core.x, y: G.core.y, width: G.core.w, height: G.core.h, fill: CT.paperAlt, stroke: meta.accent, 'stroke-width': 1.8 }, svg);
     el('text', { x: G.core.x + 8, y: G.core.y + 15, 'font-size': 11.5, fill: meta.accent, 'font-family': SANS, 'font-weight': 700, 'letter-spacing': 0.3 }, svg, 'NÚCLEO 0');
     const led = el('circle', { cx: G.core.x + G.core.w - 14, cy: G.core.y + 11, r: 5, fill: 'none', stroke: INK_FAINT, 'stroke-width': 1.4 }, svg);
     el('line', { x1: G.core.x, y1: G.core.y + 22, x2: G.core.x + G.core.w, y2: G.core.y + 22, stroke: BLOCK_STROKE }, svg);
@@ -186,11 +205,11 @@
       const y = 139 + i * 14;
       el('text', { x: 606, y, 'font-size': 11, fill: INK_SOFT, 'font-family': SANS }, svg, label);
       regs[k] = el('text', { x: 726, y, 'font-size': 12.5, 'font-weight': 700, fill: INK, 'text-anchor': 'end', 'font-family': MONO }, svg, '—');
-      el('line', { x1: 606, y1: y + 3, x2: 726, y2: y + 3, stroke: 'rgba(28,28,26,0.18)' }, svg);
+      el('line', { x1: 606, y1: y + 3, x2: 726, y2: y + 3, stroke: CT.hairline }, svg);
     });
-    const ucRect = el('rect', { x: 440, y: 222, width: 140, height: 36, fill: '#ffffff', stroke: BLOCK_STROKE }, svg);
+    const ucRect = el('rect', { x: 440, y: 222, width: 140, height: 36, fill: CT.paper, stroke: BLOCK_STROKE }, svg);
     el('text', { x: 510, y: 244, 'text-anchor': 'middle', 'font-size': 11.5, fill: INK_SOFT, 'font-family': SANS }, svg, 'UNIDAD CTRL');
-    const aluRect = el('rect', { x: 592, y: 222, width: 136, height: 36, fill: '#ffffff', stroke: BLOCK_STROKE }, svg);
+    const aluRect = el('rect', { x: 592, y: 222, width: 136, height: 36, fill: CT.paper, stroke: BLOCK_STROKE }, svg);
     el('text', { x: 660, y: 244, 'text-anchor': 'middle', 'font-size': 11.5, fill: INK_SOFT, 'font-family': SANS }, svg, 'ALU');
     const ucFlash = el('rect', { x: 440, y: 222, width: 140, height: 36, fill: meta.accent, opacity: 0 }, svg);
     const aluFlash = el('rect', { x: 592, y: 222, width: 136, height: 36, fill: meta.accent, opacity: 0 }, svg);
@@ -210,14 +229,14 @@
     procs.forEach((p, i) => {
       const cx = G.pcb.x + 8 + (i % cols) * (tileW + 5), cy = G.pcb.y + 24 + Math.floor(i / cols) * (tileH + 5);
       const gTile = el('g', {}, svg);
-      const r = el('rect', { x: cx, y: cy, width: tileW, height: tileH, fill: '#ffffff', stroke: BLOCK_STROKE }, gTile);
+      const r = el('rect', { x: cx, y: cy, width: tileW, height: tileH, fill: CT.paper, stroke: BLOCK_STROKE }, gTile);
       el('rect', { x: cx, y: cy, width: 4, height: tileH, fill: colorOf(p.id) }, gTile);
       el('text', { x: cx + 10, y: two ? cy + 14 : cy + tileH / 2 + 4, 'font-size': two ? 12.5 : 11.5, 'font-weight': 700, fill: INK, 'font-family': MONO }, gTile, 'P' + p.id);
       const rest = el('text', { x: cx + tileW - 6, y: cy + 14, 'font-size': 11.5, fill: INK_SOFT, 'text-anchor': 'end', 'font-family': MONO }, gTile, '');
       const state = two
         ? el('text', { x: cx + 10, y: cy + tileH - 7, 'font-size': 9, 'font-weight': 700, fill: INK_FAINT, 'font-family': SANS }, gTile, '')
         : el('text', { x: cx + tileW - 6, y: cy + tileH / 2 + 3.5, 'font-size': 8.5, 'font-weight': 700, fill: INK_FAINT, 'text-anchor': 'end', 'font-family': SANS }, gTile, '');
-      const flash = el('rect', { x: cx, y: cy, width: tileW, height: tileH, fill: '#f7ecc9', opacity: 0 }, gTile);
+      const flash = el('rect', { x: cx, y: cy, width: tileW, height: tileH, fill: CT.goldWash, opacity: 0 }, gTile);
       const focus = el('rect', { x: cx - 1.5, y: cy - 1.5, width: tileW + 3, height: tileH + 3, fill: 'none', stroke: INK, 'stroke-width': 1.6, opacity: 0 }, gTile);
       tiles[p.id] = { r, rest, state, flash, focus };
     });
@@ -247,9 +266,9 @@
     procs.forEach(p => {
       const gEl = el('g', { 'data-id': p.id }, tokLayer);
       const rect = el('rect', { fill: colorOf(p.id), stroke: 'rgba(0,0,0,.4)' }, gEl);
-      const follow = el('rect', { fill: 'none', stroke: '#1c1c1a', 'stroke-width': 2, opacity: 0 }, gEl);
-      const main = el('text', { 'font-family': 'JetBrains Mono, monospace', 'font-weight': 700, fill: '#1c1c1a' }, gEl, 'P' + p.id);
-      const sub = el('text', { 'font-family': 'JetBrains Mono, monospace', 'font-weight': 600, fill: '#1c1c1a', opacity: 0.75 }, gEl, '');
+      const follow = el('rect', { fill: 'none', stroke: CT.ink, 'stroke-width': 2, opacity: 0 }, gEl);
+      const main = el('text', { 'font-family': 'JetBrains Mono, monospace', 'font-weight': 700, fill: CT.ink }, gEl, 'P' + p.id);
+      const sub = el('text', { 'font-family': 'JetBrains Mono, monospace', 'font-weight': 600, fill: CT.ink, opacity: 0.75 }, gEl, '');
       tokens[p.id] = { g: gEl, rect, follow, main, sub, zone: 'mem', x: 0, y: 0, w: 40, h: 30, id: p.id };
     });
 
@@ -319,8 +338,8 @@
       } else {
         regs.pid.textContent = '—'; regs.pc.textContent = '—'; regs.rest.textContent = '—'; regs.qnt.textContent = '—';
         bayNote.textContent = st.allDone ? 'terminado' : 'CPU libre';
-        led.setAttribute('fill', st.allDone ? '#3d3a6b' : 'none');
-        led.setAttribute('stroke', st.allDone ? '#3d3a6b' : '#8a877e');
+        led.setAttribute('fill', st.allDone ? STATE.done.color : 'none');
+        led.setAttribute('stroke', st.allDone ? STATE.done.color : INK_FAINT);
       }
       // celdas de la ráfaga en ejecución
       cellsG.innerHTML = '';
@@ -331,31 +350,31 @@
         const filled = Math.round(cells * info.executed / info.burst);
         for(let i = 0; i < cells; i++)
           el('rect', { x: 446 + i * cw + 0.8, y: 186, width: Math.max(1, cw - 1.6), height: 8,
-            fill: i < filled ? colorOf(run.id) : '#efece3', stroke: i < filled ? 'none' : 'rgba(28,28,26,0.18)' }, cellsG);
+            fill: i < filled ? colorOf(run.id) : CT.paperAlt, stroke: i < filled ? 'none' : BLOCK_STROKE }, cellsG);
       }
       // PCB
       procs.forEach(p => {
         const e = map[p.id], tl = tiles[p.id];
         if(!e) return;
-        const meta2 = STATE_META[e.zone];
+        const meta2 = STATE[e.zone];
         tl.state.textContent = LONG ? meta2.label : meta2.short; tl.state.setAttribute('fill', meta2.color);
         const info = st.procInfo(p.id);
         tl.rest.textContent = !two ? '' : (e.zone === 'done' ? '0' : String(info.remaining));
-        tl.r.setAttribute('stroke', e.zone === 'core' ? meta.accent : 'rgba(28,28,26,0.4)');
+        tl.r.setAttribute('stroke', e.zone === 'core' ? meta.accent : BLOCK_STROKE);
         tl.focus.setAttribute('opacity', follow === p.id ? 1 : 0);
       });
       // lámpara del planificador y pie de tarjeta
       const lg = lastLog(t);
-      const km = lg ? (KIND[lg.kind] || { label: lg.kind.toUpperCase(), color: '#8a877e' }) : null;
+      const km = lg ? (KIND[lg.kind] || { label: lg.kind.toUpperCase(), color: INK_FAINT }) : null;
       if(km){
         lampText.textContent = km.label; lampText.setAttribute('fill', km.color); lampRect.setAttribute('stroke', km.color);
         kindEl.textContent = km.label; kindEl.style.color = km.color; kindEl.style.borderColor = km.color;
         whyEl.textContent = lg.text; whyEl.title = lg.text;
       } else {
-        lampText.textContent = 'EN ESPERA'; lampText.setAttribute('fill', '#8a877e'); lampRect.setAttribute('stroke', '#8a877e');
+        lampText.textContent = 'EN ESPERA'; lampText.setAttribute('fill', INK_FAINT); lampRect.setAttribute('stroke', INK_FAINT);
         kindEl.textContent = ''; whyEl.textContent = 'Aún no ocurre ninguna decisión.';
       }
-      if(t >= sim.maxTime){ kindEl.textContent = 'FIN'; kindEl.style.color = '#3d3a6b'; kindEl.style.borderColor = '#3d3a6b'; whyEl.textContent = `Todos los procesos terminaron en t=${data.ownFinish}.`; }
+      if(t >= sim.maxTime){ const fc = (KIND.finish && KIND.finish.color) || STATE.done.color; kindEl.textContent = 'FIN'; kindEl.style.color = fc; kindEl.style.borderColor = fc; whyEl.textContent = `Todos los procesos terminaron en t=${data.ownFinish}.`; }
       // proceso seguido
       procs.forEach(p => tokens[p.id].follow.setAttribute('opacity', follow === p.id ? 1 : 0));
     }
@@ -454,7 +473,17 @@
   }
 
   /* --------------------------- API del módulo --------------------------- */
-  let cfg = null, chips = [], mode = 'all', lastT = 0, lastFollow = null;
+  let cfg = null, chips = [], mode = 'all', lastT = 0, lastFollow = null, currentSim = null;
+
+  function build(sim){
+    chips.forEach(c => c.destroy());
+    cfg.container.innerHTML = '';
+    chips = cfg.algoOrder.map(key => {
+      const chip = createChip({ container: cfg.container, key, meta: cfg.algoMeta[key], sim, colorOf: cfg.colorOf });
+      chip.card.querySelector('.chip-head').addEventListener('click', () => PV.setMode(mode === 'all' ? key : 'all'));
+      return chip;
+    });
+  }
 
   PV.init = function(opts){
     cfg = opts;
@@ -467,16 +496,19 @@
   };
 
   PV.setSim = function(sim){
-    chips.forEach(c => c.destroy());
-    cfg.container.innerHTML = '';
-    chips = cfg.algoOrder.map(key => {
-      const chip = createChip({ container: cfg.container, key, meta: cfg.algoMeta[key], sim, colorOf: cfg.colorOf });
-      chip.card.querySelector('.chip-head').addEventListener('click', () => PV.setMode(mode === 'all' ? key : 'all'));
-      return chip;
-    });
+    currentSim = sim;
+    build(sim);
     lastFollow = null; lastT = 0;
     PV.setMode(mode === 'all' || cfg.algoOrder.includes(mode) ? mode : 'all');
     chips.forEach(c => c.snap(0));
+  };
+
+  /** Redibuja los 4 chips con la paleta del tema activo, sin perder el instante ni el seguimiento. */
+  PV.rebuildTheme = function(){
+    if(!currentSim) return;
+    build(currentSim);
+    PV.setMode(mode);
+    chips.forEach(c => { c.snap(lastT); if(lastFollow !== null) c.setFollow(lastFollow); });
   };
 
   PV.setMode = function(m){

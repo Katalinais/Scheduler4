@@ -12,11 +12,17 @@ const Metrics = Scheduler.Metrics;
 const Render = Scheduler.Render;
 const DecisionLog = Scheduler.DecisionLog;
 
+const ACCENTS = {
+  light: { FCFS:'#1f3a5f', SJF:'#7a2331', SRTF:'#2f5233', RR:'#3d3a6b' },
+  dark:  { FCFS:'#4fd1c5', SJF:'#ffb454', SRTF:'#ff6b81', RR:'#7aa2ff' },
+};
+// .accent es un getter: siempre resuelve el color del tema activo, sin
+// necesidad de reconstruir este objeto cuando el usuario cambia de tema.
 const ALGO_META = {
-  FCFS: { label:'FCFS', full:'First-Come, First-Served', accent:'#1f3a5f' },
-  SJF:  { label:'SJF',  full:'Shortest Job First (no expropiativo)', accent:'#7a2331' },
-  SRTF: { label:'SRTF', full:'Shortest Remaining Time First (expropiativo)', accent:'#2f5233' },
-  RR:   { label:'RR',   full:'Round Robin', accent:'#3d3a6b' },
+  FCFS: { label:'FCFS', full:'First-Come, First-Served', get accent(){ return ACCENTS[Scheduler.Theme.get()].FCFS; } },
+  SJF:  { label:'SJF',  full:'Shortest Job First (no expropiativo)', get accent(){ return ACCENTS[Scheduler.Theme.get()].SJF; } },
+  SRTF: { label:'SRTF', full:'Shortest Remaining Time First (expropiativo)', get accent(){ return ACCENTS[Scheduler.Theme.get()].SRTF; } },
+  RR:   { label:'RR',   full:'Round Robin', get accent(){ return ACCENTS[Scheduler.Theme.get()].RR; } },
 };
 const ALGO_ORDER = ['FCFS','SJF','SRTF','RR'];
 const RUN = { FCFS: Algorithms.fcfs, SJF: Algorithms.sjf, SRTF: Algorithms.srtf, RR: Algorithms.rr };
@@ -55,10 +61,12 @@ const btnPlay = $('btnPlay');
 const playIcon = $('playIcon');
 const speedGroup = $('speedGroup');
 const tooltip = $('tooltip');
+const statusLed = $('statusLed');
 const statusText = $('statusText');
 const clockText = $('clockText');
 const verdictsEl = $('verdicts');
 const compareCanvas = $('compareCanvas');
+const themeToggle = $('themeToggle');
 
 /* ============================================================
    TABLA DE PROCESOS
@@ -146,6 +154,7 @@ function buildChannelsDOM(){
     const meta = ALGO_META[key];
     const el = document.createElement('div');
     el.className = 'channel';
+    el.dataset.algo = key;
     el.style.setProperty('--accent', meta.accent);
     el.innerHTML = `
       <div class="channel-head">
@@ -363,6 +372,7 @@ function markStale(){
 
 function setStatus(kind, text){
   statusText.className = 'status-text status-' + kind;
+  statusLed.className = 'led led-' + kind;
   statusText.textContent = text;
 }
 
@@ -437,8 +447,14 @@ timeSlider.addEventListener('input', (e)=>{
 /* ============================================================
    EXPORTAR PNG
    ============================================================ */
+function cssVar(name, fallback){
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
 $('btnExport').addEventListener('click', ()=>{
   if(!sim) return;
+  const XT = { bg: cssVar('--bg','#f1f0ea'), ink: cssVar('--ink','#1c1c1a'), inkSoft: cssVar('--ink-soft','#4a4a46'), inkFaint: cssVar('--ink-faint','#8a877e') };
   const px = Math.max(10, Math.min(40, 1400/sim.maxTime));
   const trackW = sim.maxTime*px;
   const marginX = 40;
@@ -453,14 +469,14 @@ $('btnExport').addEventListener('click', ()=>{
   const ctx = c.getContext('2d');
   ctx.setTransform(dpr,0,0,dpr,0,0);
 
-  ctx.fillStyle = '#fdfcfa'; ctx.fillRect(0,0,width,height);
+  ctx.fillStyle = XT.bg; ctx.fillRect(0,0,width,height);
 
-  ctx.fillStyle = '#1c1c1a';
+  ctx.fillStyle = XT.ink;
   ctx.font = '700 20px "PT Serif", Georgia, serif';
   ctx.textAlign = 'left';
   ctx.fillText('Panel de Planificación de CPU — Reporte de Simulación', marginX, 34);
   ctx.font = 'italic 11px "PT Serif", Georgia, serif';
-  ctx.fillStyle = '#8a877e';
+  ctx.fillStyle = XT.inkFaint;
   ctx.fillText(new Date().toLocaleString(), marginX, 52);
   ctx.fillText(`${sim.procs.length} procesos, quantum RR ${$('quantumInput').value}, t_max ${sim.maxTime}`, marginX, 68);
 
@@ -469,8 +485,8 @@ $('btnExport').addEventListener('click', ()=>{
   let lx = marginX;
   sim.procs.forEach(p=>{
     ctx.fillStyle = Render.colorOf(p.id); ctx.fillRect(lx, y, 9, 9);
-    ctx.strokeStyle = '#1c1c1a'; ctx.lineWidth = 1; ctx.strokeRect(lx+0.5, y+0.5, 9, 9);
-    ctx.fillStyle = '#4a4a46';
+    ctx.strokeStyle = XT.ink; ctx.lineWidth = 1; ctx.strokeRect(lx+0.5, y+0.5, 9, 9);
+    ctx.fillStyle = XT.inkSoft;
     const label = `P${p.id} L${p.arrival}/R${p.burst}`;
     ctx.fillText(label, lx+13, y+9);
     lx += ctx.measureText(label).width + 36;
@@ -484,10 +500,10 @@ $('btnExport').addEventListener('click', ()=>{
     ctx.fillStyle = meta.accent;
     ctx.fillRect(marginX-14, y, 3, 60);
     ctx.font = '700 15px "PT Serif", Georgia, serif';
-    ctx.fillStyle = '#1c1c1a';
+    ctx.fillStyle = XT.ink;
     ctx.fillText(`${meta.label} — ${meta.full}`, marginX, y+14);
     ctx.font = '500 11px "JetBrains Mono", monospace';
-    ctx.fillStyle = '#4a4a46';
+    ctx.fillStyle = XT.inkSoft;
     ctx.fillText(
       `Espera ${m.avgWaiting.toFixed(2)}   Retorno ${m.avgTurnaround.toFixed(2)}   Respuesta ${m.avgResponse.toFixed(2)}   Cambios ${m.contextSwitches}` +
       (m.starving.length ? `   Inanición: ${m.starving.map(i=>'P'+i).join(',')}` : ''),
@@ -513,7 +529,7 @@ $('btnExport').addEventListener('click', ()=>{
   Render.drawComparisonChart(ctx, trackW+12, chartH-20, compareData);
   ctx.restore();
 
-  ctx.fillStyle = '#8a877e';
+  ctx.fillStyle = XT.inkFaint;
   ctx.font = 'italic 10px "PT Serif", Georgia, serif';
   ctx.textAlign = 'center';
   ctx.fillText('Simulador académico de planificación de CPU — Sistemas Operativos', width/2, height-14);
@@ -575,5 +591,35 @@ Scheduler.CodeViewer.init({
   algorithms: { fcfs: Algorithms.fcfs, sjf: Algorithms.sjf, srtf: Algorithms.srtf, rr: Algorithms.rr },
   els: { tabsBox: $('algoTabs'), desc: $('algoDesc'), meta: $('codeMeta'), codeBlock: $('codeBlock'), copyBtn: $('btnCopyCode') },
 });
+
+/* ============================================================
+   TEMA CLARO / OSCURO
+   ============================================================ */
+function paintThemeToggle(){
+  const t = Scheduler.Theme.get();
+  themeToggle.querySelectorAll('[data-theme-opt]').forEach(s => s.classList.toggle('active', s.dataset.themeOpt === t));
+}
+
+function reRenderForTheme(){
+  paintThemeToggle();
+  if(!sim) return;
+  // el acento por algoritmo ya se fijó una vez al construir los canales; hay que refrescarlo
+  document.querySelectorAll('.channel[data-algo]').forEach(el => {
+    el.style.setProperty('--accent', ALGO_META[el.dataset.algo].accent);
+  });
+  redrawAll();
+  renderCompare();
+  Scheduler.StepView.render(cursorTime);
+  ALGO_ORDER.forEach(key => {
+    DecisionLog.render(wrapEls[key].logBox, sim.algos[key].log);
+    DecisionLog.setActiveTime(wrapEls[key].logBox, cursorTime);
+  });
+  Scheduler.ProcessorView.rebuildTheme();
+}
+
+themeToggle.addEventListener('click', () => Scheduler.Theme.toggle());
+document.addEventListener('themechange', reRenderForTheme);
+Scheduler.Theme.init();
+paintThemeToggle();
 
 })();

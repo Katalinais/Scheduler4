@@ -6,8 +6,13 @@
 <title>Panel de Planificación de CPU</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&family=PT+Sans:wght@400;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&family=PT+Sans:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
+<script>
+  // Aplica el tema guardado antes de pintar, para que no parpadee.
+  try{ document.documentElement.dataset.theme = localStorage.getItem('scheduler-theme') || 'light'; }
+  catch(e){ document.documentElement.dataset.theme = 'light'; }
+</script>
 </head>
 <body>
 
@@ -16,15 +21,20 @@
   <header class="masthead">
     <div class="brand">
       <div class="seal">SO</div>
+      <div class="brand-mark"><span></span><span></span><span></span><span></span></div>
       <div class="brand-text">
         <h1>Panel de Planificación de CPU</h1>
         <p>Cuatro algoritmos clásicos de planificación — FCFS, SJF, SRTF y Round Robin — comparados sobre los mismos procesos</p>
       </div>
     </div>
     <div class="status-cluster">
+      <span class="led led-wait" id="statusLed"></span>
       <span class="status-text" id="statusText">En espera.</span>
       <span class="status-sep" aria-hidden="true">—</span>
       <span class="clock" id="clockText">00:00:00</span>
+      <button class="theme-toggle" id="themeToggle" title="Cambiar entre tema claro y oscuro">
+        <span data-theme-opt="light">Libro</span><span data-theme-opt="dark">Sala de control</span>
+      </button>
     </div>
   </header>
 
@@ -76,7 +86,10 @@
           <div class="fig-placeholder">
             <span class="fig-placeholder-label">Fig. 2 — pendiente</span>
           </div>
+          <div class="radar"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="dot"></div></div>
+          <h3>SIN SEÑAL</h3>
           <p>Configura los procesos a la izquierda (llegada y ráfaga) y ajusta el quantum de Round Robin. Cuando estés listo, presiona <strong>Simular</strong> para generar esta figura con los cuatro algoritmos sobre los mismos datos.</p>
+          <div class="prompt-line">&gt; esperando datos<span class="blink">_</span></div>
         </div>
 
         <div class="results-live" id="resultsLive" data-view="procesador">
@@ -186,6 +199,7 @@
 
 <!-- Utilidades compartidas -->
 <script src="js/metrics.js"></script>
+<script src="js/theme.js"></script>
 <script src="js/render.js"></script>
 <script src="js/decision-log.js"></script>
 <script src="js/code-viewer.js"></script>

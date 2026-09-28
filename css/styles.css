@@ -3,6 +3,7 @@
    TOKENS — página de libro de texto: papel, tinta, reglas finas
    ============================================================ */
 :root{
+  /* -------- tema "página" (claro), por defecto -------- */
   --bg:            #f1f0ea;   /* mesa / fondo de página */
   --paper:         #ffffff;   /* superficie de cada figura */
   --paper-alt:     #faf8f3;   /* superficie ligeramente marcada (bloques de código, resaltados) */
@@ -13,16 +14,107 @@
   --rule:          #ddd9cd;   /* filete fino */
   --rule-strong:   #1c1c1a;
 
-  --navy:          #1f3a5f;   /* FCFS */
-  --maroon:        #7a2331;   /* SJF, errores, cursor de tiempo */
-  --forest:        #2f5233;   /* SRTF, admisión */
-  --slate:         #3d3a6b;   /* RR */
+  --navy:          #1f3a5f;   /* código: palabra clave */
+  --maroon:        #7a2331;   /* errores, cursor de tiempo */
+  --forest:        #2f5233;   /* código: cadena */
+  --slate:         #3d3a6b;   /* código: número */
   --gold:          #96731c;   /* énfasis, reencolar */
   --gold-wash:     #f7ecc9;   /* resaltador, para marcar como con lápiz de resaltar */
 
   --font-serif: 'PT Serif', Georgia, 'Times New Roman', serif;
   --font-sans:  'PT Sans', 'Helvetica Neue', Arial, sans-serif;
   --font-mono:  'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  /* acentos por algoritmo (Gantt, chip del procesador, pestañas de código) */
+  --accent-fcfs:   #1f3a5f;
+  --accent-sjf:    #7a2331;
+  --accent-srtf:   #2f5233;
+  --accent-rr:     #3d3a6b;
+
+  /* bitácora de decisiones / lámpara del planificador */
+  --kind-dispatch: #1f3a5f;
+  --kind-preempt:  #b0413e;
+  --kind-idle:     #8a877e;
+  --kind-admit:    #4f7942;
+  --kind-requeue:  #96731c;
+  --kind-finish:   #6b4c9a;
+
+  /* ciclo de vida del proceso, tabla de PCB */
+  --state-new:     #8a877e;
+  --state-ready:   #96731c;
+  --state-exec:    #2f5233;
+  --state-done:    #3d3a6b;
+
+  /* gráfico comparativo y resaltado de sintaxis */
+  --chart-wait:    #1f3a5f;
+  --chart-turn:    #7a2331;
+  --code-keyword:  var(--navy);
+  --code-string:   var(--forest);
+  --code-number:   var(--slate);
+
+  /* paleta de procesos (Gantt, fichas del procesador) */
+  --proc-1: #3b6ea5; --proc-2: #b0413e; --proc-3: #c9a227; --proc-4: #4f7942;
+  --proc-5: #6b4c9a; --proc-6: #2f8f8a; --proc-7: #a8567e; --proc-8: #6e7a3a;
+  --cursor-line: #7a2331;
+
+  /* acentos decorativos de sección — en el tema claro se funden con la tinta */
+  --role-amber: var(--ink); --role-cyan: var(--ink); --role-green: var(--ink);
+  --role-red: var(--maroon); --role-violet: var(--ink);
+}
+
+[data-theme="dark"]{
+  /* -------- tema "sala de control" (oscuro) -------- */
+  --bg:            #0a0d12;
+  --paper:         #10141b;
+  --paper-alt:     #141a23;
+
+  --ink:           #e7ebf2;
+  --ink-soft:      #8d99b0;
+  --ink-faint:     #56607a;
+  --rule:          #232b38;
+  --rule-strong:   #37435a;
+
+  --font-serif: 'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+  --font-sans:  'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+
+  --navy:          #52d6d0;
+  --maroon:        #ff5c72;
+  --forest:        #59d68a;
+  --slate:         #a78bfa;
+  --gold:          #ffb454;
+
+  --accent-fcfs:   #4fd1c5;
+  --accent-sjf:    #ffb454;
+  --accent-srtf:   #ff6b81;
+  --accent-rr:     #7aa2ff;
+
+  --kind-dispatch: #52d6d0;
+  --kind-preempt:  #ff5c72;
+  --kind-idle:     #56607a;
+  --kind-admit:    #59d68a;
+  --kind-requeue:  #ffb454;
+  --kind-finish:   #9d8bff;
+
+  --state-new:     #6b7a90;
+  --state-ready:   #ffb454;
+  --state-exec:    #52d6d0;
+  --state-done:    #9d8bff;
+
+  --chart-wait:    #ffb454;
+  --chart-turn:    #52d6d0;
+  --code-keyword:  #ff9f43;
+  --code-string:   #4ecdc4;
+  --code-number:   #a78bfa;
+
+  --proc-1: #ff6b6b; --proc-2: #4ecdc4; --proc-3: #ffd23f; --proc-4: #a78bfa;
+  --proc-5: #3ea6ff; --proc-6: #ff9f43; --proc-7: #37d67a; --proc-8: #ff7edb;
+  --cursor-line: #52d6d0;
+
+  --role-amber: #ffb454; --role-cyan: #52d6d0; --role-green: #59d68a;
+  --role-red: #ff5c72; --role-violet: #9d8bff;
+
+  --gold-wash: #2a2110;
+  --cut: 12px;
 }
 
 *{ box-sizing: border-box; }
@@ -495,3 +587,106 @@ body.fit .control-row{ padding: 2px 10px 0; }
 body.fit #stepDiverge{ margin: 2px 10px 0; padding: 4px 0; font-size:12px; }
 body.fit .proc-panel{ padding: 4px 10px 0; }
 body.fit .proc-grid{ gap: 8px; }
+
+/* ============================================================
+   INTERRUPTOR DE TEMA
+   ============================================================ */
+.theme-toggle{
+  display:flex; align-items:center; gap:6px; background: var(--paper); border:1px solid var(--rule-strong);
+  padding: 4px; cursor:pointer; font-family: var(--font-sans); font-size:11.5px; color: var(--ink-soft);
+}
+.theme-toggle span{ padding: 4px 9px; }
+.theme-toggle span.active{ background: var(--ink); color: var(--paper); font-weight:700; }
+[data-theme="dark"] .theme-toggle span.active{ background: var(--role-amber); color:#241a08; }
+
+/* ============================================================
+   TEMA OSCURO — restaura el panel de control original
+   ============================================================ */
+[data-theme="dark"] body{
+  background-image:
+    radial-gradient(ellipse 900px 500px at 12% -10%, rgba(82,214,208,0.06), transparent 60%),
+    radial-gradient(ellipse 800px 500px at 100% 0%, rgba(255,180,84,0.05), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 26px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 26px);
+  background-attachment: fixed;
+}
+@keyframes darkPulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.35; } }
+
+/* membrete: barras de color en vez del sello, LED de estado */
+[data-theme="dark"] .seal{ display:none; }
+.brand-mark{ display:none; align-items:flex-end; gap:3px; height:30px; }
+[data-theme="dark"] .brand-mark{ display:flex; }
+.brand-mark span{ width:6px; display:block; }
+.brand-mark span:nth-child(1){ height:40%; background:#ff6b6b; }
+.brand-mark span:nth-child(2){ height:70%; background:#ffd23f; }
+.brand-mark span:nth-child(3){ height:100%; background:#4ecdc4; }
+.brand-mark span:nth-child(4){ height:55%; background:#3ea6ff; }
+[data-theme="dark"] .masthead{ border-bottom: none; border-top: 2px solid var(--role-amber); background: linear-gradient(180deg, var(--paper-alt), var(--paper)); padding: 14px 18px; }
+[data-theme="dark"] .brand-text p{ font-style: normal; }
+[data-theme="dark"] .status-text{ font-style: normal; letter-spacing: 0.03em; }
+[data-theme="dark"] .status-sep{ display:none; }
+.led{ display:none; width:8px; height:8px; flex-shrink:0; background: var(--ink-faint); }
+[data-theme="dark"] .led{ display:inline-block; }
+[data-theme="dark"] .led.led-busy{ background: var(--role-amber); box-shadow:0 0 8px var(--role-amber); animation: darkPulse 0.7s infinite; }
+[data-theme="dark"] .led.led-ready{ background: var(--role-green); box-shadow:0 0 8px var(--role-green); }
+[data-theme="dark"] .led.led-stale{ background: var(--role-amber); animation: darkPulse 1.2s infinite; }
+
+/* figuras: esquinas cortadas y barra de acento superior */
+[data-theme="dark"] .panel{ clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); border-top: none; }
+[data-theme="dark"] .panel::before{ content:""; position:absolute; top:0; left:0; right:0; height:2px; background: var(--panel-accent, var(--role-amber)); }
+[data-theme="dark"] .fig-label{ font-weight:700; }
+
+/* estado vacío: radar en vez de la figura pendiente */
+.fig-placeholder{ }
+[data-theme="dark"] .fig-placeholder{ display:none; }
+.radar{ display:none; position:relative; width:120px; height:120px; }
+[data-theme="dark"] .radar{ display:block; }
+.radar .ring{ position:absolute; border:1px dashed var(--rule-strong); border-radius:50%; }
+.radar .ring:nth-child(1){ inset:0; }
+.radar .ring:nth-child(2){ inset:18px; }
+.radar .ring:nth-child(3){ inset:36px; }
+.radar .dot{ position:absolute; top:50%; left:50%; width:8px; height:8px; margin:-4px; background: var(--role-amber);
+  border-radius:50%; box-shadow:0 0 12px var(--role-amber); animation: darkPulse 1.4s infinite; }
+.results-empty h3{ display:none; font-size: 20px; letter-spacing: 0.03em; color: var(--ink); font-family: var(--font-serif); }
+[data-theme="dark"] .results-empty h3{ display:block; }
+.prompt-line{ display:none; font-family: var(--font-mono); color: var(--role-cyan); font-size: 13px; }
+[data-theme="dark"] .prompt-line{ display:block; }
+.blink{ animation: blink 1s step-end infinite; }
+@keyframes blink{ 50%{ opacity:0; } }
+
+/* botones: acento de color a la izquierda, como antes */
+[data-theme="dark"] .btn:hover{ background: var(--paper-alt); color: var(--ink); }
+[data-theme="dark"] .btn-primary{ background: var(--role-amber); color:#241a08; border-color: var(--role-amber); }
+[data-theme="dark"] .btn-primary:hover{ background:#ffc274; }
+[data-theme="dark"] .btn-ghost{ border-left: 3px solid var(--role-cyan); }
+[data-theme="dark"] .btn-ghost:hover{ border-color: var(--role-cyan); color: var(--role-cyan); }
+[data-theme="dark"] .btn-add{ border-left: 3px solid var(--role-green); }
+[data-theme="dark"] .btn-add:hover{ border-color: var(--role-green); color: var(--role-green); }
+[data-theme="dark"] .btn-diff{ border-left: 3px solid var(--role-amber); }
+[data-theme="dark"] .btn-diff:hover{ border-color: var(--role-amber); color: var(--role-amber); }
+[data-theme="dark"] .proc-wide{ border-left: 3px solid var(--role-amber); }
+[data-theme="dark"] .proc-wide:hover, [data-theme="dark"] .proc-wide.open{ background:var(--paper-alt); color: var(--role-amber); border-color: var(--role-amber); }
+[data-theme="dark"] .row-del:hover{ border-color: var(--role-red); color: var(--role-red); }
+[data-theme="dark"] .view-tab.active, [data-theme="dark"] .proc-modes button.active, [data-theme="dark"] .speed-group button.active{
+  background: var(--role-cyan); color: #05201f;
+}
+[data-theme="dark"] .algo-tab.active{ border-bottom-color: var(--tab-accent, var(--role-amber)); }
+
+/* insignias y avisos: vuelve el resplandor tenue en vez del lápiz de tinta */
+[data-theme="dark"] .error-box{ background: #3a1620; border-left-color: var(--role-red); color:#ffc2ca; }
+[data-theme="dark"] .error-box .err-title{ color: var(--role-red); }
+[data-theme="dark"] .starve-badge{ background: #3a2c18; border-color: var(--role-amber); color:#ffdca8; font-style: normal; }
+[data-theme="dark"] .verdict-badge{ background: var(--paper-alt); border-color: var(--rule-strong); }
+[data-theme="dark"] .tooltip{ box-shadow: 0 0 0 1px rgba(0,0,0,0.4); }
+[data-theme="dark"] .tooltip b{ color: var(--role-amber); }
+
+/* bitácora y paso a paso: el resaltado ya no es "lápiz de resaltar" sino resplandor */
+[data-theme="dark"] .log-entry.active{ background: rgba(82,214,208,0.08); }
+[data-theme="dark"] .step-follow{ background: none; border-style: dashed; border-color: var(--ink); }
+[data-theme="dark"] .cpu-idle, [data-theme="dark"] .chips .empty{ font-style: normal; }
+
+/* código: bloque más oscuro que el resto del papel, como una terminal */
+[data-theme="dark"] .code-block{ background: var(--bg); }
+
+/* chip del procesador: vuelve el resplandor del núcleo activo */
+[data-theme="dark"] .chip-card{ background:#080d10; }
